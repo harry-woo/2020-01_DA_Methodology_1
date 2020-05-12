@@ -1,8 +1,14 @@
 ---
 title: "Faraway"
 author: "Harry Woo"
-date: '2020 5 12 '
-output: html_document
+date: '2020-5-12'
+output: 
+  pdf_document: null
+  word_document: default
+  latex_engine: xelatex
+mainfont: NanumGothic
+html_notebook: default
+html_document: default
 ---
 
 ```{r setup, include = FALSE}
@@ -17,30 +23,12 @@ _The dataset teengamb concerns a study of teenage gambling in Britain. Fit a reg
 
 ```{r load packages, include=FALSE}
 
-if("faraway" %in% rownames(installed.packages()) == FALSE){
-  install.packages("faraway")
-}
 library(faraway)
-
-if("ggplot2" %in% rownames(installed.packages()) == FALSE){
-  install.packages("ggplot2")
-}
 library(ggplot2)
-
-if("dplyr" %in% rownames(installed.packages()) == FALSE){
-  install.packages("dplyr")
-}
 library(dplyr)
-
-if("knitr" %in% rownames(installed.packages()) == FALSE){
-  install.packages("knitr")
-}
 library(knitr)
-
-if("pander" %in% rownames(installed.packages()) == FALSE){
-  install.packages("pander")
-}
 library(pander)
+library(gt)
 
 ```
 
@@ -54,14 +42,31 @@ print(tg_lms)
 
 ### (a) What percentage of variation in the response is explained by these predictors? 
 
-`tg_lms$r.squared``=``r tg_lms$r.squared` 어떻게
+전체 제곱합(SST)에서 회귀 제곱합(SSR)이 설명하는 비중, 즉 모형의 설명력은 결정 계수 R^2^ 이다. 위 Summary 에서와 같이 동 모형의 결정계수 **Multiple R-squared = 0.5267** 이다. 
 
-```{r eval = TRUE}
+```{r problem-1-a}
 
 var_ex <- data.frame(Var_explained = tg_lms$r.squared)
-pander(var_ex)
+var_ex %>% gt() %>% 
+  fmt_percent(columns = vars(Var_explained),
+              decimals = 2)
 
 ```
+
+### (b) Which observation has the largest (positive) residual? Give the case number. 
+
+회귀모형의 `residuals` 를 데이터프레임으로 변환하여 잔차값 기준으로 내림차순 정렬을 시행해 largest residual의 case number를 추출한 결과, **해당 case number는 24** 이다. 
+
+```{r problem-1-b}
+
+res <- data.frame(case_no = c(1:47), residual = tg_lm$residuals)
+res %>% 
+  arrange(desc(residual)) %>% 
+  slice(1) %>% 
+  gt()
+
+```
+
 
 ## Including Plots
 

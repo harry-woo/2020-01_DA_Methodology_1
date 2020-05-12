@@ -15,6 +15,7 @@
   \usepackage{unicode-math}
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+  \setmainfont[]{NanumGothic}
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -99,59 +100,116 @@
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{longtable}
 
 \title{Faraway}
 \author{Harry Woo}
-\date{2020 5 12}
+\date{2020-5-12}
 
 \begin{document}
 \maketitle
-
-\hypertarget{r-markdown}{%
-\subsection{R Markdown}\label{r-markdown}}
 
 This is an R Markdown document. Markdown is a simple formatting syntax
 for authoring HTML, PDF, and MS Word documents. For more details on
 using R Markdown see \url{http://rmarkdown.rstudio.com}.
 
-When you click the \textbf{Knit} button a document will be generated
-that includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
-
 \hypertarget{problem-2.1}{%
-\section{Problem 2.1}\label{problem-2.1}}
+\subsection{Problem 2.1}\label{problem-2.1}}
 
 \emph{The dataset teengamb concerns a study of teenage gambling in
 Britain. Fit a regression model with the expenditure on gambling as the
 response and the sex, status, income and verbal score as predictors.
 Present the output.}
 
-\begin{itemize}
-\item
-  \begin{enumerate}
-  \def\labelenumi{(\alph{enumi})}
-  \tightlist
-  \item
-    What percentage of variation in the response is explained by these
-    predictors?
-  \end{enumerate}
-\end{itemize}
-
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{summary}\NormalTok{(cars)}
+\NormalTok{tg_lm <-}\StringTok{  }\KeywordTok{lm}\NormalTok{(gamble }\OperatorTok{~}\StringTok{ }\NormalTok{sex }\OperatorTok{+}\StringTok{ }\NormalTok{status }\OperatorTok{+}\StringTok{ }\NormalTok{income }\OperatorTok{+}\StringTok{ }\NormalTok{verbal, }\DataTypeTok{data =}\NormalTok{ teengamb)}
+\NormalTok{tg_lms <-}\StringTok{ }\KeywordTok{summary}\NormalTok{(tg_lm)}
+\KeywordTok{print}\NormalTok{(tg_lms)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
-##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00
+## 
+## Call:
+## lm(formula = gamble ~ sex + status + income + verbal, data = teengamb)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -51.082 -11.320  -1.451   9.452  94.252 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  22.55565   17.19680   1.312   0.1968    
+## sex         -22.11833    8.21111  -2.694   0.0101 *  
+## status        0.05223    0.28111   0.186   0.8535    
+## income        4.96198    1.02539   4.839 1.79e-05 ***
+## verbal       -2.95949    2.17215  -1.362   0.1803    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 22.69 on 42 degrees of freedom
+## Multiple R-squared:  0.5267, Adjusted R-squared:  0.4816 
+## F-statistic: 11.69 on 4 and 42 DF,  p-value: 1.815e-06
 \end{verbatim}
+
+\hypertarget{a-what-percentage-of-variation-in-the-response-is-explained-by-these-predictors}{%
+\subsubsection{(a) What percentage of variation in the response is
+explained by these
+predictors?}\label{a-what-percentage-of-variation-in-the-response-is-explained-by-these-predictors}}
+
+전체 제곱합(SST)에서 회귀 제곱합(SSR)이 설명하는 비중, 즉 모형의
+설명력은 결정 계수 R\textsuperscript{2} 이다. 위 Summary 에서와 같이 동
+모형의 결정계수 \textbf{Multiple R-squared = 0.5267} 이다.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{var_ex <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{Var_explained =}\NormalTok{ tg_lms}\OperatorTok{$}\NormalTok{r.squared)}
+\NormalTok{var_ex }\OperatorTok{%>%}\StringTok{ }\KeywordTok{gt}\NormalTok{() }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{fmt_percent}\NormalTok{(}\DataTypeTok{columns =} \KeywordTok{vars}\NormalTok{(Var_explained),}
+              \DataTypeTok{decimals =} \DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{r}
+\toprule
+Var\_explained \\ 
+\midrule
+$52.67\%$ \\ 
+\bottomrule
+\end{longtable}
+
+\hypertarget{b-which-observation-has-the-largest-positive-residual-give-the-case-number.}{%
+\subsubsection{(b) Which observation has the largest (positive)
+residual? Give the case
+number.}\label{b-which-observation-has-the-largest-positive-residual-give-the-case-number.}}
+
+회귀모형의 \texttt{residuals} 를 데이터프레임으로 변환하여 잔차값
+기준으로 내림차순 정렬을 시행해 largest residual의 case number를 추출한
+결과, \textbf{해당 case number는 24} 이다.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{res <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{case_no =} \KeywordTok{c}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{47}\NormalTok{), }\DataTypeTok{residual =}\NormalTok{ tg_lm}\OperatorTok{$}\NormalTok{residuals)}
+\NormalTok{res }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{arrange}\NormalTok{(}\KeywordTok{desc}\NormalTok{(residual)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{slice}\NormalTok{(}\DecValTok{1}\NormalTok{) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{gt}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{cr}
+\toprule
+case\_no & residual \\ 
+\midrule
+24 & 94.25222 \\ 
+\bottomrule
+\end{longtable}
 
 \hypertarget{including-plots}{%
 \subsection{Including Plots}\label{including-plots}}

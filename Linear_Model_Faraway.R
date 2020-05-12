@@ -21,12 +21,18 @@ head(teengamb)
 
 # (a) What percentage of variation in the response is explained by these predictors?
 fit_tg <- lm(gamble ~ ., data = teengamb)
-summary(fit_tg)
+fit_tgs <- summary(fit_tg)
 lm(gamble ~ sex, data = teengamb)
 
 # (b) Which observation has the largest (positive) residual? Give the case number.
-res <- data.frame(index = c(1:47), res = fit_tg$residuals)
-arrange(res, desc(res))[1,]
+resi <- data.frame(index = c(1:47), res = fit_tg$residuals)
+arrange(resi, desc(res))[1,]
+
+names(fit_tg)
+names(fit_tgs)
+
+fit_tg$residuals == fit_tgs$residuals
+
 
 # (c) Compute the mean and median of the residuals.
 mean(fit_tg$residuals)
@@ -50,4 +56,5 @@ PF <- predict(fit_tg, mean_female, interval = "confidence")
 PM[,1]-PF[,1] 
 
 
-
+library(gt)
+data.frame(explained = fit_tgs$r.squared) %>% gt()
