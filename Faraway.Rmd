@@ -1,0 +1,74 @@
+---
+title: "Faraway"
+author: "Harry Woo"
+date: '2020 5 12 '
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+## Problem 2.1
+
+_The dataset teengamb concerns a study of teenage gambling in Britain. Fit a regression model with the expenditure on gambling as the response and the sex, status, income and verbal score as predictors. Present the output._
+
+```{r load packages, include=FALSE}
+
+if("faraway" %in% rownames(installed.packages()) == FALSE){
+  install.packages("faraway")
+}
+library(faraway)
+
+if("ggplot2" %in% rownames(installed.packages()) == FALSE){
+  install.packages("ggplot2")
+}
+library(ggplot2)
+
+if("dplyr" %in% rownames(installed.packages()) == FALSE){
+  install.packages("dplyr")
+}
+library(dplyr)
+
+if("knitr" %in% rownames(installed.packages()) == FALSE){
+  install.packages("knitr")
+}
+library(knitr)
+
+if("pander" %in% rownames(installed.packages()) == FALSE){
+  install.packages("pander")
+}
+library(pander)
+
+```
+
+```{r model fitting}
+
+tg_lm <-  lm(gamble ~ sex + status + income + verbal, data = teengamb)
+tg_lms <- summary(tg_lm)
+print(tg_lms)
+
+```
+
+### (a) What percentage of variation in the response is explained by these predictors? 
+
+`tg_lms$r.squared``=``r tg_lms$r.squared` 어떻게
+
+```{r eval = TRUE}
+
+var_ex <- data.frame(Var_explained = tg_lms$r.squared)
+pander(var_ex)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
