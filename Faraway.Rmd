@@ -34,6 +34,8 @@ library(pander)
 library(gt)
 library(officer)
 library(flextable)
+library(ellipse) 
+library(purrr)
 
 ```
 
@@ -134,7 +136,8 @@ data(prostate)
 head(prostate)
 
 ps_lm <- lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + gleason + pgg45, data = prostate)
-summary(ps_lm)
+ps_lms <- summary(ps_lm)
+ps_lms
 
 ```
 
@@ -144,6 +147,11 @@ summary(ps_lm)
 
 ```{r chap3-problem-1-a}
 
+confint(ps_lm, parm = "age", level = 0.90)
+confint(ps_lm, parm = "age", level = 0.95)
+
+names(ps_lms)
+ps_lms$coefficients["age", "Pr(>|t|)"]
 
 ```
 
@@ -153,7 +161,11 @@ summary(ps_lm)
 
 ```{r chap3-problem-1-b}
 
-
+library(ellipse) 
+plot(ellipse(ps_lm, c("age", "lbph")), type = "l") 
+points(0, 0, pch = 1) 
+abline(v = confint(ps_lm)['age', ], lty = 2) 
+abline(h = confint(ps_lm)['lbph', ], lty = 2) 
 
 ```
 
@@ -170,6 +182,19 @@ gleason pgg45
 
 ```{r chap3-problem-1-c}
 
+new_patient <- data.frame(
+  "lcavol" = 1.44692,
+  "lweight" = 3.62301,
+  "age" = 65.00000,
+  "lbph" = 0.30010,
+  "svi" = 0.00000,
+  "lcp" = -0.79851,
+  "gleason" = 7.00000,
+  "pgg45" = 15.00000
+)
+
+new_patient
+predict(ps_lm, newdata = new_patient, interval = "prediction")
 
 ```
 
@@ -180,6 +205,16 @@ gleason pgg45
 
 ```{r chap3-problem-1-d}
 
+new_patient2 <- new_patient
+new_patient2[3] = 20
+rbind(new_patient, new_patient2)
+
+predict(ps_lm, newdata = new_patient2, interval = "prediction")
+
+ggplot(data = prostate, aes(x = age, y = ..density..)) +
+  geom_histogram(bins = 10, fill = "steelblue", colour = "white") +
+  ggtitle(label = "Histogram of Age") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
 
 ```
 
@@ -190,6 +225,21 @@ gleason pgg45
 
 ```{r chap3-problem-1-e}
 
+t_value <- summary(ps_lm) %>% 
+  coef() %>% 
+  .["age", "t value"] 
+
+permute_tmod <- function(nsims) {
+  map_dbl(1:nsims,
+          ~ lm(sample(lpsa) ~ ., data = prostate) %>%
+            summary() %>%
+            coef() %>%
+            .["age", "t value"]) 
+} 
+  
+mean(abs(permute_tmod(100)) > abs(t_value)) 
+mean(abs(permute_tmod(1000)) > abs(t_value)) 
+mean(abs(permute_tmod(10000)) > abs(t_value)) 
 
 ```
 
