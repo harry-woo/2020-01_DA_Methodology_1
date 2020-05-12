@@ -7,6 +7,7 @@ install.packages("pander")
 install.packages("ggannotate")
 install.packages("gt")
 install.packages("gtsummary")
+install.packages("flextable")
 
 library(faraway)
 library(dplyr)

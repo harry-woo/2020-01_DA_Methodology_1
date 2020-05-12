@@ -19,7 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-## Problem 2.1
+## Chapter 2 Estimation
+## Problem 1
 
 _The dataset teengamb concerns a study of teenage gambling in Britain. Fit a regression model with the expenditure on gambling as the response and the sex, status, income and verbal score as predictors. Present the output._
 
@@ -36,7 +37,10 @@ library(flextable)
 
 ```
 
-```{r model fitting}
+```{r teengamb-model-fitting}
+
+data(teengamb)
+head(teengamb)
 
 tg_lm <-  lm(gamble ~ sex + status + income + verbal, data = teengamb)
 tg_lms <- summary(tg_lm)
@@ -48,7 +52,7 @@ print(tg_lms)
 
 전체 제곱합(SST)에서 회귀 제곱합(SSR)이 설명하는 비중, 즉 모형의 설명력은 결정 계수 R^2^ 이다. 위 Summary 에서와 같이 동 모형의 결정계수 **Multiple R-squared = 0.5267** 이다. 
 
-```{r problem-1-a}
+```{r chap2-problem-1-a}
 
 var_ex <- data.frame(Var_explained = tg_lms$r.squared)
 var_ex %>% gt() %>% 
@@ -61,7 +65,7 @@ var_ex %>% gt() %>%
 
 회귀모형의 `residuals` 를 데이터프레임으로 변환하여 잔차값 기준으로 내림차순 정렬을 시행해 largest residual의 case number를 추출한 결과, **해당 case number는 24** 이다. 
 
-```{r problem-1-b}
+```{r chap2-problem-1-b}
 
 res <- data.frame(case_no = c(1:47), residual = tg_lm$residuals)
 res %>% 
@@ -75,7 +79,7 @@ res %>%
 
 . 
 
-```{r problem-1-c}
+```{r chap2-problem-1-c}
 
 res %>% 
   summarise(mean = mean(residual), median = median(residual)) %>% 
@@ -87,7 +91,7 @@ res %>%
 
 . 
 
-```{r problem-1-d}
+```{r chap2-problem-1-d}
 
 data.frame(correlation = cor(tg_lm$residuals, tg_lm$fitted.values)) %>% 
   gt()
@@ -99,7 +103,7 @@ data.frame(correlation = cor(tg_lm$residuals, tg_lm$fitted.values)) %>%
 
 . 
 
-```{r problem-1-e}
+```{r chap2-problem-1-e}
 
 data.frame(correlation = cor(teengamb$income, tg_lm$fitted.values)) %>% 
   gt()
@@ -111,7 +115,7 @@ data.frame(correlation = cor(teengamb$income, tg_lm$fitted.values)) %>%
 
 . 
 
-```{r problem-1-f}
+```{r chap2-problem-1-f}
 
 data.frame(Gender_coef = tg_lm$coefficients["sex"]) %>% 
   gt()
@@ -119,12 +123,76 @@ data.frame(Gender_coef = tg_lm$coefficients["sex"]) %>%
 
 ```
 
-## Including Plots
+## Chapter 3 Interference
+## Problem 1
 
-You can also embed plots, for example:
+_For the prostate data, fit a model with lpsa as the response and the other variables as predictors._
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r prostate-model-fitting}
+
+data(prostate)
+head(prostate)
+
+ps_lm <- lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + gleason + pgg45, data = prostate)
+summary(ps_lm)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### (a) Compute 90 and 95% CIs for the parameter associated with age. Using just these intervals, what could we have deduced about the p-value for age in the regression summary?
+ 
+/
+
+```{r chap3-problem-1-a}
+
+
+```
+
+### (b) Compute and display a 95% joint confidence region for the parameters associated with age and lbph. Plot the origin on this display. The location of the origin on the display tells us the outcome of a certain hypothesis test. State that test and its outcome.
+
+/
+
+```{r chap3-problem-1-b}
+
+
+
+```
+
+### (c) Suppose a new patient with the following values arrives:
+
+`data.framelcavol lweight age Ibph svi lcp
+1.44692 3.62301 65.00000 0.30010 0.00000 -0.79851
+gleason pgg45
+7.00000 15.00000
+
+### Predict the lpsa for this patient along with an appropriate 95% CI.
+
+/
+
+```{r chap3-problem-1-c}
+
+
+```
+
+
+### (d) Repeat the last question for a patient with the same values except that he or she is age 20. Explain why the CI is wider.
+
+/
+
+```{r chap3-problem-1-d}
+
+
+```
+
+
+### (e) In the text, we made a permutation test corresponding to the F-test for the significance of all the predictors. Execute the permutation test corresponding to the t-test for age in this model. (Hint: {summary (g) $coef [4,3] gets you the t-statistic you need if the model is called g.)
+
+/
+
+```{r chap3-problem-1-e}
+
+
+```
+
+
+
+
