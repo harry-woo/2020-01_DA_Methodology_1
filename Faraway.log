@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.5.12)  12 MAY 2020 15:24
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/W32TeX) (preloaded format=pdflatex 2020.5.12)  15 MAY 2020 13:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -364,9 +364,9 @@ Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \@lastruleclass=\count276
 \@thisrulewidth=\dimen175
 ) (c:/texlive/2020/texmf-dist/tex/latex/caption/caption.sty
-Package: caption 2020/01/03 v3.4h Customizing captions (AR)
+Package: caption 2020/05/10 v3.4j Customizing captions (AR)
 (c:/texlive/2020/texmf-dist/tex/latex/caption/caption3.sty
-Package: caption3 2020/01/03 v1.8h caption3 kernel (AR)
+Package: caption3 2020/05/10 v1.11 caption3 kernel (AR)
 Package caption3 Info: TeX engine: e-TeX on input line 61.
 \captionmargin=\dimen176
 \captionmargin@=\dimen177
@@ -559,17 +559,19 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 117.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-28.
+31.
 (c:/texlive/2020/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 129.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 132.
 LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
-157.
+177.
 (c:/texlive/2020/texmf-dist/tex/latex/lm/ts1lmtt.fd
 File: ts1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-)
+) [1
+
+{c:/texlive/2020/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 
 ! Package inputenc Error: Unicode character 전 (U+C804)
 (inputenc)                not set up for use with LaTeX.
@@ -578,15 +580,15 @@ See the inputenc package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.164 전
+l.184 전
          체 제곱합(SST)에서 회귀 제곱합(SSR)이 설명하는 비�...
  
 Here is how much of TeX's memory you used:
- 14635 strings out of 480681
- 217319 string characters out of 5908521
- 505720 words of memory out of 5000000
- 30192 multiletter control sequences out of 15000+600000
+ 14691 strings out of 480681
+ 218652 string characters out of 5908521
+ 508088 words of memory out of 5000000
+ 30241 multiletter control sequences out of 15000+600000
  578071 words of font info for 77 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,6n,42p,806b,339s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 41i,6n,43p,806b,465s stack positions out of 5000i,500n,10000p,200000b,80000s
 !  ==> Fatal error occurred, no output PDF file produced!

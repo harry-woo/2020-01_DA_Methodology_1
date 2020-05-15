@@ -116,13 +116,33 @@ This is an R Markdown document. Markdown is a simple formatting syntax
 for authoring HTML, PDF, and MS Word documents. For more details on
 using R Markdown see \url{http://rmarkdown.rstudio.com}.
 
-\hypertarget{problem-2.1}{%
-\subsection{Problem 2.1}\label{problem-2.1}}
+\hypertarget{chapter-2-estimation}{%
+\subsection{Chapter 2 Estimation}\label{chapter-2-estimation}}
+
+\hypertarget{problem-1}{%
+\subsection{Problem 1}\label{problem-1}}
 
 \emph{The dataset teengamb concerns a study of teenage gambling in
 Britain. Fit a regression model with the expenditure on gambling as the
 response and the sex, status, income and verbal score as predictors.
 Present the output.}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data}\NormalTok{(teengamb)}
+\KeywordTok{head}\NormalTok{(teengamb)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   sex status income verbal gamble
+## 1   1     51   2.00      8    0.0
+## 2   1     28   2.50      8    0.0
+## 3   1     37   2.00      6    0.0
+## 4   1     28   7.00      4    7.3
+## 5   1     65   2.00      8   19.6
+## 6   1     61   3.47      6    0.1
+\end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -211,14 +231,374 @@ case\_no & residual \\
 \bottomrule
 \end{longtable}
 
-\hypertarget{including-plots}{%
-\subsection{Including Plots}\label{including-plots}}
+\hypertarget{c-compute-the-mean-and-median-of-the-residuals.}{%
+\subsubsection{(c) Compute the mean and median of the
+residuals.}\label{c-compute-the-mean-and-median-of-the-residuals.}}
 
-You can also embed plots, for example:
+.
 
-\includegraphics{Faraway_files/figure-latex/pressure-1.pdf}
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{res }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{summarise}\NormalTok{(}\DataTypeTok{mean =} \KeywordTok{mean}\NormalTok{(residual), }\DataTypeTok{median =} \KeywordTok{median}\NormalTok{(residual)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{gt}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
 
-Note that the \texttt{echo\ =\ FALSE} parameter was added to the code
-chunk to prevent printing of the R code that generated the plot.
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{rr}
+\toprule
+mean & median \\ 
+\midrule
+-3.065293e-17 & -1.451392 \\ 
+\bottomrule
+\end{longtable}
+
+\hypertarget{d-compute-the-correlation-of-the-residuals-with-the-fitted-values.}{%
+\subsubsection{(d) Compute the correlation of the residuals with the
+fitted
+values.}\label{d-compute-the-correlation-of-the-residuals-with-the-fitted-values.}}
+
+.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{correlation =} \KeywordTok{cor}\NormalTok{(tg_lm}\OperatorTok{$}\NormalTok{residuals, tg_lm}\OperatorTok{$}\NormalTok{fitted.values)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{gt}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{r}
+\toprule
+correlation \\ 
+\midrule
+-1.070659e-16 \\ 
+\bottomrule
+\end{longtable}
+
+\hypertarget{e-compute-the-correlation-of-the-residuals-with-the-income.}{%
+\subsubsection{(e) Compute the correlation of the residuals with the
+income.}\label{e-compute-the-correlation-of-the-residuals-with-the-income.}}
+
+.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{correlation =} \KeywordTok{cor}\NormalTok{(teengamb}\OperatorTok{$}\NormalTok{income, tg_lm}\OperatorTok{$}\NormalTok{fitted.values)) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{gt}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{r}
+\toprule
+correlation \\ 
+\midrule
+0.857142 \\ 
+\bottomrule
+\end{longtable}
+
+\hypertarget{f-for-all-other-predictors-held-constant-what-would-be-the-difference-in-predicted-expenditure-on-gambling-for-a-male-compared-to-a-female}{%
+\subsubsection{(f) For all other predictors held constant, what would be
+the difference in predicted expenditure on gambling for a male compared
+to a
+female?}\label{f-for-all-other-predictors-held-constant-what-would-be-the-difference-in-predicted-expenditure-on-gambling-for-a-male-compared-to-a-female}}
+
+.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{Gender_coef =}\NormalTok{ tg_lm}\OperatorTok{$}\NormalTok{coefficients[}\StringTok{"sex"}\NormalTok{]) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{gt}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\captionsetup[table]{labelformat=empty,skip=1pt}
+\begin{longtable}{r}
+\toprule
+Gender\_coef \\ 
+\midrule
+-22.11833 \\ 
+\bottomrule
+\end{longtable}
+
+\hypertarget{chapter-3-interference}{%
+\subsection{Chapter 3 Interference}\label{chapter-3-interference}}
+
+\hypertarget{problem-1-1}{%
+\subsection{Problem 1}\label{problem-1-1}}
+
+\emph{For the prostate data, fit a model with lpsa as the response and
+the other variables as predictors.}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data}\NormalTok{(prostate)}
+\KeywordTok{head}\NormalTok{(prostate)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       lcavol lweight age      lbph svi      lcp gleason pgg45     lpsa
+## 1 -0.5798185  2.7695  50 -1.386294   0 -1.38629       6     0 -0.43078
+## 2 -0.9942523  3.3196  58 -1.386294   0 -1.38629       6     0 -0.16252
+## 3 -0.5108256  2.6912  74 -1.386294   0 -1.38629       7    20 -0.16252
+## 4 -1.2039728  3.2828  58 -1.386294   0 -1.38629       6     0 -0.16252
+## 5  0.7514161  3.4324  62 -1.386294   0 -1.38629       6     0  0.37156
+## 6 -1.0498221  3.2288  50 -1.386294   0 -1.38629       6     0  0.76547
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ps_lm <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(lpsa }\OperatorTok{~}\StringTok{ }\NormalTok{lcavol }\OperatorTok{+}\StringTok{ }\NormalTok{lweight }\OperatorTok{+}\StringTok{ }\NormalTok{age }\OperatorTok{+}\StringTok{ }\NormalTok{lbph }\OperatorTok{+}\StringTok{ }\NormalTok{svi }\OperatorTok{+}\StringTok{ }\NormalTok{lcp }\OperatorTok{+}\StringTok{ }\NormalTok{gleason }\OperatorTok{+}\StringTok{ }\NormalTok{pgg45, }\DataTypeTok{data =}\NormalTok{ prostate)}
+\NormalTok{ps_lms <-}\StringTok{ }\KeywordTok{summary}\NormalTok{(ps_lm)}
+\NormalTok{ps_lms}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = lpsa ~ lcavol + lweight + age + lbph + svi + lcp + 
+##     gleason + pgg45, data = prostate)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.7331 -0.3713 -0.0170  0.4141  1.6381 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  0.669337   1.296387   0.516  0.60693    
+## lcavol       0.587022   0.087920   6.677 2.11e-09 ***
+## lweight      0.454467   0.170012   2.673  0.00896 ** 
+## age         -0.019637   0.011173  -1.758  0.08229 .  
+## lbph         0.107054   0.058449   1.832  0.07040 .  
+## svi          0.766157   0.244309   3.136  0.00233 ** 
+## lcp         -0.105474   0.091013  -1.159  0.24964    
+## gleason      0.045142   0.157465   0.287  0.77503    
+## pgg45        0.004525   0.004421   1.024  0.30886    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.7084 on 88 degrees of freedom
+## Multiple R-squared:  0.6548, Adjusted R-squared:  0.6234 
+## F-statistic: 20.86 on 8 and 88 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\hypertarget{a-compute-90-and-95-cis-for-the-parameter-associated-with-age.-using-just-these-intervals-what-could-we-have-deduced-about-the-p-value-for-age-in-the-regression-summary}{%
+\subsubsection{(a) Compute 90 and 95\% CIs for the parameter associated
+with age. Using just these intervals, what could we have deduced about
+the p-value for age in the regression
+summary?}\label{a-compute-90-and-95-cis-for-the-parameter-associated-with-age.-using-just-these-intervals-what-could-we-have-deduced-about-the-p-value-for-age-in-the-regression-summary}}
+
+/
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{confint}\NormalTok{(ps_lm, }\DataTypeTok{parm =} \StringTok{"age"}\NormalTok{, }\DataTypeTok{level =} \FloatTok{0.90}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##            5 %         95 %
+## age -0.0382102 -0.001064151
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{confint}\NormalTok{(ps_lm, }\DataTypeTok{parm =} \StringTok{"age"}\NormalTok{, }\DataTypeTok{level =} \FloatTok{0.95}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           2.5 %      97.5 %
+## age -0.04184062 0.002566267
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{names}\NormalTok{(ps_lms)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "call"          "terms"         "residuals"     "coefficients" 
+##  [5] "aliased"       "sigma"         "df"            "r.squared"    
+##  [9] "adj.r.squared" "fstatistic"    "cov.unscaled"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ps_lms}\OperatorTok{$}\NormalTok{coefficients[}\StringTok{"age"}\NormalTok{, }\StringTok{"Pr(>|t|)"}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.08229321
+\end{verbatim}
+
+\hypertarget{b-compute-and-display-a-95-joint-confidence-region-for-the-parameters-associated-with-age-and-lbph.-plot-the-origin-on-this-display.-the-location-of-the-origin-on-the-display-tells-us-the-outcome-of-a-certain-hypothesis-test.-state-that-test-and-its-outcome.}{%
+\subsubsection{(b) Compute and display a 95\% joint confidence region
+for the parameters associated with age and lbph. Plot the origin on this
+display. The location of the origin on the display tells us the outcome
+of a certain hypothesis test. State that test and its
+outcome.}\label{b-compute-and-display-a-95-joint-confidence-region-for-the-parameters-associated-with-age-and-lbph.-plot-the-origin-on-this-display.-the-location-of-the-origin-on-the-display-tells-us-the-outcome-of-a-certain-hypothesis-test.-state-that-test-and-its-outcome.}}
+
+/
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(ellipse) }
+\KeywordTok{plot}\NormalTok{(}\KeywordTok{ellipse}\NormalTok{(ps_lm, }\KeywordTok{c}\NormalTok{(}\StringTok{"age"}\NormalTok{, }\StringTok{"lbph"}\NormalTok{)), }\DataTypeTok{type =} \StringTok{"l"}\NormalTok{) }
+\KeywordTok{points}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DataTypeTok{pch =} \DecValTok{1}\NormalTok{) }
+\KeywordTok{abline}\NormalTok{(}\DataTypeTok{v =} \KeywordTok{confint}\NormalTok{(ps_lm)[}\StringTok{'age'}\NormalTok{, ], }\DataTypeTok{lty =} \DecValTok{2}\NormalTok{) }
+\KeywordTok{abline}\NormalTok{(}\DataTypeTok{h =} \KeywordTok{confint}\NormalTok{(ps_lm)[}\StringTok{'lbph'}\NormalTok{, ], }\DataTypeTok{lty =} \DecValTok{2}\NormalTok{) }
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Faraway_files/figure-latex/chap3-problem-1-b-1.pdf}
+
+\hypertarget{c-suppose-a-new-patient-with-the-following-values-arrives}{%
+\subsubsection{(c) Suppose a new patient with the following values
+arrives:}\label{c-suppose-a-new-patient-with-the-following-values-arrives}}
+
+`data.framelcavol lweight age Ibph svi lcp 1.44692 3.62301 65.00000
+0.30010 0.00000 -0.79851 gleason pgg45 7.00000 15.00000
+
+\hypertarget{predict-the-lpsa-for-this-patient-along-with-an-appropriate-95-ci.}{%
+\subsubsection{Predict the lpsa for this patient along with an
+appropriate 95\%
+CI.}\label{predict-the-lpsa-for-this-patient-along-with-an-appropriate-95-ci.}}
+
+/
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{new_patient <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}
+  \StringTok{"lcavol"}\NormalTok{ =}\StringTok{ }\FloatTok{1.44692}\NormalTok{,}
+  \StringTok{"lweight"}\NormalTok{ =}\StringTok{ }\FloatTok{3.62301}\NormalTok{,}
+  \StringTok{"age"}\NormalTok{ =}\StringTok{ }\FloatTok{65.00000}\NormalTok{,}
+  \StringTok{"lbph"}\NormalTok{ =}\StringTok{ }\FloatTok{0.30010}\NormalTok{,}
+  \StringTok{"svi"}\NormalTok{ =}\StringTok{ }\FloatTok{0.00000}\NormalTok{,}
+  \StringTok{"lcp"}\NormalTok{ =}\StringTok{ }\FloatTok{-0.79851}\NormalTok{,}
+  \StringTok{"gleason"}\NormalTok{ =}\StringTok{ }\FloatTok{7.00000}\NormalTok{,}
+  \StringTok{"pgg45"}\NormalTok{ =}\StringTok{ }\FloatTok{15.00000}
+\NormalTok{)}
+
+\NormalTok{new_patient}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    lcavol lweight age   lbph svi      lcp gleason pgg45
+## 1 1.44692 3.62301  65 0.3001   0 -0.79851       7    15
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{predict}\NormalTok{(ps_lm, }\DataTypeTok{newdata =}\NormalTok{ new_patient, }\DataTypeTok{interval =} \StringTok{"prediction"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        fit       lwr      upr
+## 1 2.389053 0.9646584 3.813447
+\end{verbatim}
+
+\hypertarget{d-repeat-the-last-question-for-a-patient-with-the-same-values-except-that-he-or-she-is-age-20.-explain-why-the-ci-is-wider.}{%
+\subsubsection{(d) Repeat the last question for a patient with the same
+values except that he or she is age 20. Explain why the CI is
+wider.}\label{d-repeat-the-last-question-for-a-patient-with-the-same-values-except-that-he-or-she-is-age-20.-explain-why-the-ci-is-wider.}}
+
+/
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{new_patient2 <-}\StringTok{ }\NormalTok{new_patient}
+\NormalTok{new_patient2[}\DecValTok{3}\NormalTok{] =}\StringTok{ }\DecValTok{20}
+\KeywordTok{rbind}\NormalTok{(new_patient, new_patient2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    lcavol lweight age   lbph svi      lcp gleason pgg45
+## 1 1.44692 3.62301  65 0.3001   0 -0.79851       7    15
+## 2 1.44692 3.62301  20 0.3001   0 -0.79851       7    15
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{predict}\NormalTok{(ps_lm, }\DataTypeTok{newdata =}\NormalTok{ new_patient2, }\DataTypeTok{interval =} \StringTok{"prediction"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        fit      lwr      upr
+## 1 3.272726 1.538744 5.006707
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ prostate, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ age, }\DataTypeTok{y =}\NormalTok{ ..density..)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_histogram}\NormalTok{(}\DataTypeTok{bins =} \DecValTok{10}\NormalTok{, }\DataTypeTok{fill =} \StringTok{"steelblue"}\NormalTok{, }\DataTypeTok{colour =} \StringTok{"white"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{ggtitle}\NormalTok{(}\DataTypeTok{label =} \StringTok{"Histogram of Age"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{15}\NormalTok{, }\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{vjust =} \FloatTok{1.5}\NormalTok{, }\DataTypeTok{face =} \StringTok{"bold"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Faraway_files/figure-latex/chap3-problem-1-d-1.pdf}
+
+\hypertarget{e-in-the-text-we-made-a-permutation-test-corresponding-to-the-f-test-for-the-significance-of-all-the-predictors.-execute-the-permutation-test-corresponding-to-the-t-test-for-age-in-this-model.-hint-summary-g-coef-43-gets-you-the-t-statistic-you-need-if-the-model-is-called-g.}{%
+\subsubsection{(e) In the text, we made a permutation test corresponding
+to the F-test for the significance of all the predictors. Execute the
+permutation test corresponding to the t-test for age in this model.
+(Hint: \{summary (g) \$coef {[}4,3{]} gets you the t-statistic you need
+if the model is called
+g.)}\label{e-in-the-text-we-made-a-permutation-test-corresponding-to-the-f-test-for-the-significance-of-all-the-predictors.-execute-the-permutation-test-corresponding-to-the-t-test-for-age-in-this-model.-hint-summary-g-coef-43-gets-you-the-t-statistic-you-need-if-the-model-is-called-g.}}
+
+/
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{t_value <-}\StringTok{ }\KeywordTok{summary}\NormalTok{(ps_lm) }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\KeywordTok{coef}\NormalTok{() }\OperatorTok{%>%}\StringTok{ }
+\StringTok{  }\NormalTok{.[}\StringTok{"age"}\NormalTok{, }\StringTok{"t value"}\NormalTok{] }
+
+\NormalTok{permute_tmod <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(nsims) \{}
+  \KeywordTok{map_dbl}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\NormalTok{nsims,}
+          \OperatorTok{~}\StringTok{ }\KeywordTok{lm}\NormalTok{(}\KeywordTok{sample}\NormalTok{(lpsa) }\OperatorTok{~}\StringTok{ }\NormalTok{., }\DataTypeTok{data =}\NormalTok{ prostate) }\OperatorTok{%>%}
+\StringTok{            }\KeywordTok{summary}\NormalTok{() }\OperatorTok{%>%}
+\StringTok{            }\KeywordTok{coef}\NormalTok{() }\OperatorTok{%>%}
+\StringTok{            }\NormalTok{.[}\StringTok{"age"}\NormalTok{, }\StringTok{"t value"}\NormalTok{]) }
+\NormalTok{\} }
+  
+\KeywordTok{mean}\NormalTok{(}\KeywordTok{abs}\NormalTok{(}\KeywordTok{permute_tmod}\NormalTok{(}\DecValTok{100}\NormalTok{)) }\OperatorTok{>}\StringTok{ }\KeywordTok{abs}\NormalTok{(t_value)) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{mean}\NormalTok{(}\KeywordTok{abs}\NormalTok{(}\KeywordTok{permute_tmod}\NormalTok{(}\DecValTok{1000}\NormalTok{)) }\OperatorTok{>}\StringTok{ }\KeywordTok{abs}\NormalTok{(t_value)) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.075
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{mean}\NormalTok{(}\KeywordTok{abs}\NormalTok{(}\KeywordTok{permute_tmod}\NormalTok{(}\DecValTok{10000}\NormalTok{)) }\OperatorTok{>}\StringTok{ }\KeywordTok{abs}\NormalTok{(t_value)) }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.0825
+\end{verbatim}
 
 \end{document}

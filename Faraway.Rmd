@@ -2,12 +2,7 @@
 html_document: default
 author: "Harry Woo"
 date: "2020-5-12"
-output:
-  html_document:
-    df_print: paged
-  latex_engine: xelatex
-  pdf_document: null
-  word_document: default
+output: html_document
 mainfont: NanumGothic
 html_notebook: default
 title: "Faraway"
