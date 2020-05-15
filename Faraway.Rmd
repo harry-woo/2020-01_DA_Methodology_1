@@ -25,7 +25,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 _The dataset teengamb concerns a study of teenage gambling in Britain. Fit a regression model with the expenditure on gambling as the response and the sex, status, income and verbal score as predictors. Present the output._
 
-```{r load packages, include=TRUE}
+```{r load packages, message=FALSE, warning=FALSE, include=TRUE}
 
 library(faraway)
 library(ggplot2)
@@ -92,7 +92,7 @@ res %>%
 
 #### (d) Compute the correlation of the residuals with the fitted values. 
 
-회귀모형의 `residuals`와 `fitted.values` 간 correalation을 cor 함수를 통해 계산한 결과, **-1.070659e-16** 이다.
+회귀모형의 `residuals`와 `fitted.values` 사이의 correalation을 cor 함수를 통해 계산한 결과, **-1.070659e-16** 이다.
 
 ```{r chap2-problem-1-d}
 
@@ -148,32 +148,40 @@ ps_lms
  
 confint 함수를 통해 회귀모형 `ps_lm`에서 parameter `age`에 대한 신뢰구간을 계산할 수 있다. `level` 인자를 통해 각각 신뢰구간을 계산한 결과, **90% 신뢰구간은 (-0.0382, -0.0011), 95% 신뢰구간은 (-0.0418, 0.0026)** 이다.
 
+**90% 신뢰구간 사이에 0 (zero)이 존재**하기 않기 때문에, 귀무가설이 기각된다. 반면, **95% 신뢰구간에서는 아주 근소한 차이로 0 (zero)이 신뢰구간 내에 존재**하여 귀무가설을 기각할 수 없다. 이로부터 **`age`는 유의수준 0.1에서는 유의하나, 유의수준 0.05에서는 근소한 차이로 유의하지 않을 것**이라 추측할 수 있다.
+
 ```{r chap3-problem-1-a}
 
 confint(ps_lm, parm = "age", level = 0.90)
+
 confint(ps_lm, parm = "age", level = 0.95)
 
 ps_lms$coefficients["age", "Pr(>|t|)"]
 
 ```
 
-회귀모형 Summary인 `ps_lms`에서 확인할 수 있듯이 **`age`의 p-value는 0.082**로 0.05보다 약간 높다. 이는.........
-
-Based on the confidence intervals `age` is on the border for being considered significant. Because the 90% CI doesn't include 0, `age` is signficant at that level, but the upper bound of the more stringent 95% CI stretches just over zero to 0.0025. The regression sumamry confirms this by returning a p-value of 0.08, close but above the common 0.05 threshold for significance.
+실제 회귀모형 Summary인 `ps_lms`에서 확인할 수 있듯이 **`age`의 p-value는 0.082**로 0.05보다 약간 높아 유의수준 0.05에서 유의하지 않는 것으로 확인되며, 이는 앞서 **신뢰구간을 통해 추측한 내용과 일치함**을 확인할 수 있다.
 
 
 #### (b) Compute and display a 95% joint confidence region for the parameters associated with age and lbph. Plot the origin on this display. The location of the origin on the display tells us the outcome of a certain hypothesis test. State that test and its outcome.
 
-/The joint null hypothesis `age = lbph = 0`, can not be rejected because the origin lies inside of the confidence region ellipse. Similarly the null hypothesis `age = 0` can not be rejected becasue 0 lies with the 95% confidence bounds and the same is true for the null hypothesis `lbph = 0`.
+교재의 내용과 같이, ellipse 패키지를 활용하여 `age`와 `lbph`에 대한 confidence ellipse를 작성하였으며, Origin (0,0)을 pointfh, 각 축별 신뢰구간을 점선으로 추가 표기하였다.
 
 ```{r chap3-problem-1-b}
 
+# Drawing confidence ellipses
 plot(ellipse(ps_lm, c("age", "lbph")), type = "l") 
-points(0, 0, pch = 1) 
+
+# The Origin
+points(0, 0, pch = 19) 
+
+# Adding the univariate confidence intervals for both dimensions
 abline(v = confint(ps_lm)['age', ], lty = 2) 
 abline(h = confint(ps_lm)['lbph', ], lty = 2) 
 
 ```
+
+위의 plot과 같이 원점이 confidence ellipse 내에 위치하므로, 두 설명변수 모두의 회귀계수가 0이라는 `Joint null hypothesis : beta_age = beta_lbph = 0`을 기각할 수 없다. 뿐만 아니라 원점은 `age`의 신뢰구간 내에 위치할 뿐만 아니라 `lbph`의 신뢰구간 내에 위치하므로 각각의 귀무가설(`beta_age = 0` 및 `beta_lbph = 0`) 도 기각할 수 없다.
 
 #### (c) Suppose a new patient with the following values arrives:
 
@@ -191,15 +199,7 @@ abline(h = confint(ps_lm)['lbph', ], lty = 2)
 
 #### Predict the lpsa for this patient along with an appropriate 95% CI.
 
-https://github.com/ncsu-statistics/applied-regression-with-R/blob/master/BruceCampbell_ST503_HW2_FarawayCh2_Pblms_1_4_7.Rmd
-
-https://cgrudz.github.io/teaching/stat_757_2019_fall/assignments/Homework_5_solutions.html
-
-https://github.com/nathancday/faraway/blob/master/chapter3.Rmd
-
-
-Now, we construct a 95% prediction interval for the new patient given their characteristics,
-
+주어진 데이터를 `prostate` 데이터의 형식에 맞추어 `new_patient`라는 데이터프레임으로 저장하고, 교재 4장의 내용에 따라, `predict` 함수를 활용하여 회귀모형 `ps_lm` 하에서 `new_patient`에 대한 `lpsa` 추정치를 아래와 같이 산출하였다. 
 
 ```{r chap3-problem-1-c}
 
@@ -214,22 +214,21 @@ new_patient <- data.frame(
   "pgg45" = 15.00000
 )
 
-new_patient
+pander(new_patient)
 
-predict(ps_lm, newdata = new_patient, interval = "prediction") %>% 
+predict(ps_lm, new = new_patient, interval = "prediction") %>% 
   pander()
-  
 
 ```
+
+계산 결과, **`new_patient`에 대한 `lpsa`의 prediction interval은 (0.9647, 3.813)** 이다.
 
 
 #### (d) Repeat the last question for a patient with the same values except that he or she is age 20. Explain why the CI is wider.
 
-/Modifying the patient data so that all other variables are held constant, but the age is given as 20 years,we repeat the prediction interval for the individual with equal characteristics except for age,
-We note that the prediction interval is substantially wider. The histogram of the ages of the participants in our existing data is pictured as
+`New_patient` 데이터를 수정하여 `age = 20`인 `New_patient2` 데이터프레임을 생성하였으며, (c)에서와 동일한 방식으로 prediction을 실시하였다. 실시 결과, **prediction inverval이 (1.539, 5.007)로 기존에 비해 구간이 크게 증가하였음**을 확인할 수 있다. 
 
-such that the age 20 is entirely out of our previous experience. In this case, the uncertainty grows substantially due to the high level of extrapolation in this prediction.
-
+위와 같은 결과는 **20세가 기존 `age`의 분포와 동떨어진 데이터**인 데서 비롯하는 것으로 보인다.
 
 ```{r chap3-problem-1-d}
 
@@ -237,7 +236,8 @@ new_patient2 <- new_patient
 new_patient2[3] = 20
 rbind(new_patient, new_patient2)
 
-predict(ps_lm, newdata = new_patient2, interval = "prediction")
+predict(ps_lm, newdata = new_patient2, interval = "prediction") %>% 
+  pander()
 
 ggplot(data = prostate, aes(x = age, y = ..density..)) +
   geom_histogram(bins = 10, fill = "steelblue", colour = "white") +
@@ -246,30 +246,33 @@ ggplot(data = prostate, aes(x = age, y = ..density..)) +
 
 ```
 
+`age`의 히스토그램을 통해서 나타나는 바와 같이 기존 데이터의 `age`가 40-80대 사이이기에, **기존 데이터 분포로부터 크게 동떨어진 `new_patient2`의 `lpsa`에 대한 prediction interval이 `new_patient`의 것보다 크게 증가**한 것으로 판단된다.
+
 
 #### (e) In the text, we made a permutation test corresponding to the F-test for the significance of all the predictors. Execute the permutation test corresponding to the t-test for age in this model. (Hint: {summary (g) $coef [4,3] gets you the t-statistic you need if the model is called g.)
 
-/From section a above we not know the p-value for `age` is 0.08229, and we can see the return value from the permutation getting closer to that number as the number of simulations increases.
+Hint에 주어진 내용을 활용하여 Age의 t-value인 `t-val`을 `summary(ps_lm)$coef[4, 3]`로부터 산출하였다. 이를 기준으로 하여, 교재에 주어진 F-test에 대한 permutation 방식을 적용하여 `age`에 대한 t-test에 상응하는 permutation test를 실시하였다.
 
 ```{r chap3-problem-1-e}
 
-t_value <- summary(ps_lm) %>% 
-  coef() %>% 
-  .["age", "t value"] 
+t_val <- summary(ps_lm)$coef[4, 3] 
 
-permute_tmod <- function(nsims) {
-  map_dbl(1:nsims,
-          ~ lm(sample(lpsa) ~ ., data = prostate) %>%
-            summary() %>%
-            coef() %>%
-            .["age", "t value"]) 
-} 
-  
-mean(abs(permute_tmod(100)) > abs(t_value)) 
-mean(abs(permute_tmod(1000)) > abs(t_value)) 
-mean(abs(permute_tmod(10000)) > abs(t_value)) 
+set.seed(2992)
+nreps <- 4000
+tstats <- numeric(nreps)
+for(i in 1:nreps){
+  ps_lm2 <- lm(lpsa ~ lcavol + lweight + sample(age) + lbph + svi + lcp + gleason + pgg45, 
+               data = prostate)
+  tstats[i] <- summary(ps_lm2)$coef[4, 3]
+}
+
+permutation <- mean(abs(tstats) > abs(t_val))
+actual_p_val <- summary(ps_lm)$coef[4, 4]
+data.frame(permutation, actual_p_val) %>% pander()
 
 ```
+
+위와 같이 **Permutation test 결과가 회귀모형 summary 상의 p-value와 매우 유사**한 것을 확인할 수 있다.
 
 
 
