@@ -2,7 +2,12 @@
 html_document: default
 author: "Harry Woo"
 date: "2020-5-12"
-output: html_document
+output:
+  word_document: default
+  latex_engine: xelatex
+  pdf_document: null
+  html_document:
+    df_print: paged
 mainfont: NanumGothic
 html_notebook: default
 title: "Faraway"
@@ -12,14 +17,15 @@ title: "Faraway"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+이 과제물은 1차적으로 R Markdown 으로 작성되었으며, Word 문서로 knit 후 가독성을 위하여 일부 내용을 추가로 편집하였습니다.
+
 
 ## Chapter 2 Estimation
-## Problem 1
+### Problem 1
 
 _The dataset teengamb concerns a study of teenage gambling in Britain. Fit a regression model with the expenditure on gambling as the response and the sex, status, income and verbal score as predictors. Present the output._
 
-```{r load packages, include=FALSE}
+```{r load packages, include=TRUE}
 
 library(faraway)
 library(ggplot2)
@@ -45,7 +51,7 @@ print(tg_lms)
 
 ```
 
-### (a) What percentage of variation in the response is explained by these predictors? 
+#### (a) What percentage of variation in the response is explained by these predictors? 
 
 전체 제곱합(SST)에서 회귀 제곱합(SSR)이 설명하는 비중, 즉 모형의 설명력은 결정 계수 R^2^ 이다. 위 Summary 에서와 같이 동 모형의 결정계수 **Multiple R-squared = 0.5267** 이다. 
 
@@ -58,7 +64,7 @@ var_ex %>% gt() %>%
 
 ```
 
-### (b) Which observation has the largest (positive) residual? Give the case number. 
+#### (b) Which observation has the largest (positive) residual? Give the case number. 
 
 회귀모형의 `residuals` 를 데이터프레임으로 변환하여 잔차값 기준으로 내림차순 정렬을 시행해 largest residual의 case number를 추출한 결과, **해당 case number는 24** 이다. 
 
@@ -68,60 +74,62 @@ res <- data.frame(case_no = c(1:47), residual = tg_lm$residuals)
 res %>% 
   arrange(desc(residual)) %>% 
   slice(1) %>% 
-  gt()
+  pander()
 
 ```
 
-### (c) Compute the mean and median of the residuals. 
+#### (c) Compute the mean and median of the residuals. 
 
-. 
+회귀모형의 `residuals` 를 데이터프레임으로 변환하여 mean 과 median을 구한 결과, **mean은 0에 가까우며(-3.065293e-17), median은 -1.451392** 이다.
 
 ```{r chap2-problem-1-c}
 
 res %>% 
   summarise(mean = mean(residual), median = median(residual)) %>% 
-  gt()
+  pander()
 
 ```
 
-### (d) Compute the correlation of the residuals with the fitted values. 
+#### (d) Compute the correlation of the residuals with the fitted values. 
 
-. 
+회귀모형의 `residuals`와 `fitted.values` 간 correalation을 cor 함수를 통해 계산한 결과, **-1.070659e-16** 이다.
 
 ```{r chap2-problem-1-d}
 
 data.frame(correlation = cor(tg_lm$residuals, tg_lm$fitted.values)) %>% 
-  gt()
-
+  pander()
 
 ```
 
-### (e) Compute the correlation of the residuals with the income. 
+#### (e) Compute the correlation of the residuals with the income. 
 
-. 
+회귀모형의 `residuals`와 `teengamb`데이터의 `income`  간 correalation을 cor 함수를 통해 계산한 결과, **-7.242382e-17** 이다.
 
 ```{r chap2-problem-1-e}
 
-data.frame(correlation = cor(teengamb$income, tg_lm$fitted.values)) %>% 
-  gt()
-
+data.frame(correlation = cor(tg_lm$residuals, teengamb$income)) %>% 
+  pander()
 
 ```
 
-### (f) For all other predictors held constant, what would be the difference in predicted expenditure on gambling for a male compared to a female? 
+#### (f) For all other predictors held constant, what would be the difference in predicted expenditure on gambling for a male compared to a female? 
 
-. 
+`teengamb` 데이터의 `sex` column은 정수 0과 1로 구성되어 있으며 그 값에 따라 **sex: 0 = male, 1 =  female** 을 나타낸다. 그러므로 회귀모형 `tg_lm`의 회귀계수를 통해 다른 설명변수가 constant 할 때, `sex`의 변화에 따른 종속변수 `gamble`의 변화를 추정할 수 있다.
 
 ```{r chap2-problem-1-f}
 
-data.frame(Gender_coef = tg_lm$coefficients["sex"]) %>% 
-  gt()
+str(teengamb$sex)
 
+data.frame(Gender_coef = tg_lm$coefficients["sex"]) %>% 
+  pander()
 
 ```
 
+위와 같이 성별이 0에서 1로 증가함에 따라, 즉 남성에서 여성으로 변화함에 따라 `gamble`은 -22.12 변화함을 알 수 있다. 다시 말해, **여성의 지출이 남성에 비해 22.12 낮을 것**으로 예측된다.
+
+
 ## Chapter 3 Interference
-## Problem 1
+### Problem 1
 
 _For the prostate data, fit a model with lpsa as the response and the other variables as predictors._
 
@@ -136,27 +144,30 @@ ps_lms
 
 ```
 
-### (a) Compute 90 and 95% CIs for the parameter associated with age. Using just these intervals, what could we have deduced about the p-value for age in the regression summary?
+#### (a) Compute 90 and 95% CIs for the parameter associated with age. Using just these intervals, what could we have deduced about the p-value for age in the regression summary?
  
-/
+confint 함수를 통해 회귀모형 `ps_lm`에서 parameter `age`에 대한 신뢰구간을 계산할 수 있다. `level` 인자를 통해 각각 신뢰구간을 계산한 결과, **90% 신뢰구간은 (-0.0382, -0.0011), 95% 신뢰구간은 (-0.0418, 0.0026)** 이다.
 
 ```{r chap3-problem-1-a}
 
 confint(ps_lm, parm = "age", level = 0.90)
 confint(ps_lm, parm = "age", level = 0.95)
 
-names(ps_lms)
 ps_lms$coefficients["age", "Pr(>|t|)"]
 
 ```
 
-### (b) Compute and display a 95% joint confidence region for the parameters associated with age and lbph. Plot the origin on this display. The location of the origin on the display tells us the outcome of a certain hypothesis test. State that test and its outcome.
+회귀모형 Summary인 `ps_lms`에서 확인할 수 있듯이 **`age`의 p-value는 0.082**로 0.05보다 약간 높다. 이는.........
 
-/
+Based on the confidence intervals `age` is on the border for being considered significant. Because the 90% CI doesn't include 0, `age` is signficant at that level, but the upper bound of the more stringent 95% CI stretches just over zero to 0.0025. The regression sumamry confirms this by returning a p-value of 0.08, close but above the common 0.05 threshold for significance.
+
+
+#### (b) Compute and display a 95% joint confidence region for the parameters associated with age and lbph. Plot the origin on this display. The location of the origin on the display tells us the outcome of a certain hypothesis test. State that test and its outcome.
+
+/The joint null hypothesis `age = lbph = 0`, can not be rejected because the origin lies inside of the confidence region ellipse. Similarly the null hypothesis `age = 0` can not be rejected becasue 0 lies with the 95% confidence bounds and the same is true for the null hypothesis `lbph = 0`.
 
 ```{r chap3-problem-1-b}
 
-library(ellipse) 
 plot(ellipse(ps_lm, c("age", "lbph")), type = "l") 
 points(0, 0, pch = 1) 
 abline(v = confint(ps_lm)['age', ], lty = 2) 
@@ -164,16 +175,31 @@ abline(h = confint(ps_lm)['lbph', ], lty = 2)
 
 ```
 
-### (c) Suppose a new patient with the following values arrives:
+#### (c) Suppose a new patient with the following values arrives:
 
-`data.framelcavol lweight age Ibph svi lcp
-1.44692 3.62301 65.00000 0.30010 0.00000 -0.79851
-gleason pgg45
-7.00000 15.00000
 
-### Predict the lpsa for this patient along with an appropriate 95% CI.
+`r data.frame(
+  "lcavol" = 1.44692,
+  "lweight" = 3.62301,
+  "age" = 65.00000,
+  "lbph" = 0.30010,
+  "svi" = 0.00000,
+  "lcp" = -0.79851,
+  "gleason" = 7.00000,
+  "pgg45" = 15.00000
+) %>% pander()`
 
-/
+#### Predict the lpsa for this patient along with an appropriate 95% CI.
+
+https://github.com/ncsu-statistics/applied-regression-with-R/blob/master/BruceCampbell_ST503_HW2_FarawayCh2_Pblms_1_4_7.Rmd
+
+https://cgrudz.github.io/teaching/stat_757_2019_fall/assignments/Homework_5_solutions.html
+
+https://github.com/nathancday/faraway/blob/master/chapter3.Rmd
+
+
+Now, we construct a 95% prediction interval for the new patient given their characteristics,
+
 
 ```{r chap3-problem-1-c}
 
@@ -189,14 +215,21 @@ new_patient <- data.frame(
 )
 
 new_patient
-predict(ps_lm, newdata = new_patient, interval = "prediction")
+
+predict(ps_lm, newdata = new_patient, interval = "prediction") %>% 
+  pander()
+  
 
 ```
 
 
-### (d) Repeat the last question for a patient with the same values except that he or she is age 20. Explain why the CI is wider.
+#### (d) Repeat the last question for a patient with the same values except that he or she is age 20. Explain why the CI is wider.
 
-/
+/Modifying the patient data so that all other variables are held constant, but the age is given as 20 years,we repeat the prediction interval for the individual with equal characteristics except for age,
+We note that the prediction interval is substantially wider. The histogram of the ages of the participants in our existing data is pictured as
+
+such that the age 20 is entirely out of our previous experience. In this case, the uncertainty grows substantially due to the high level of extrapolation in this prediction.
+
 
 ```{r chap3-problem-1-d}
 
@@ -214,9 +247,9 @@ ggplot(data = prostate, aes(x = age, y = ..density..)) +
 ```
 
 
-### (e) In the text, we made a permutation test corresponding to the F-test for the significance of all the predictors. Execute the permutation test corresponding to the t-test for age in this model. (Hint: {summary (g) $coef [4,3] gets you the t-statistic you need if the model is called g.)
+#### (e) In the text, we made a permutation test corresponding to the F-test for the significance of all the predictors. Execute the permutation test corresponding to the t-test for age in this model. (Hint: {summary (g) $coef [4,3] gets you the t-statistic you need if the model is called g.)
 
-/
+/From section a above we not know the p-value for `age` is 0.08229, and we can see the return value from the permutation getting closer to that number as the number of simulations increases.
 
 ```{r chap3-problem-1-e}
 
