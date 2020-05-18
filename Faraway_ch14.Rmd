@@ -1,0 +1,178 @@
+---
+html_document: default
+author: "Harry Woo"
+date: "2020-5-18"
+output:
+  word_document: default
+  latex_engine: xelatex
+  pdf_document: null
+  html_document:
+    df_print: paged
+mainfont: NanumGothic
+html_notebook: default
+title: "Faraway Ch14"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+이 과제물은 1차적으로 R Markdown 으로 작성되었으며, Word 문서로 knit 후 가독성을 위하여 일부 내용을 추가로 편집하였습니다.
+
+
+## Faraway Chapter 14 Categorical Predictors
+### Problem 1
+
+_Using the teengamb data, model gamble as the response and the other variables as predictors, investigate the possibility of interactions between sex and the other predictors. Interpret your final model._
+
+```{r load packages, message=FALSE, warning=FALSE, include=TRUE}
+
+library(faraway)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(pander)
+library(gt)
+library(officer)
+library(flextable)
+library(ellipse) 
+library(purrr)
+library(GGally)
+library(MASS)
+library(car)
+
+```
+
+
+#### model fitting
+`gamble`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.
+
+```{r teengamb-model-fitting}
+
+data(teengamb)
+head(teengamb)
+
+tg <- teengamb %>% 
+  mutate(sex = factor(sex, labels = c("male", "female")))
+
+tg_lm <-  lm(gamble ~ sex + status + income + verbal, data = teengamb)
+summary(tg_lm)
+
+ggpairs(tg, legend = 1, 
+        mapping = aes(colour = sex),
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+ggplot(data = teengamb, aes(x = as.factor(sex), y = status))+
+  geom_boxplot()
+
+ggplot(data = teengamb, aes(x = as.factor(sex), y = income))+
+  geom_boxplot()
+
+
+```
+
+#### interactions
+
+```{r teengamb-interactions}
+
+
+str(teengamb)
+table(teengamb$verbal)
+
+step_lm <- lm(gamble ~ as.factor(sex) * income * status * verbal, data = teengamb)
+step <- stepAIC(step_lm, direction = "both")
+step$anova
+
+step_sq <- lm(sqrt(gamble) ~ as.factor(sex) * income * status * verbal, data = teengamb)
+step2 <- stepAIC(step_sq, direction = "both")
+step2$anova
+
+step_log <- lm(log(gamble + 0.1) ~ as.factor(sex) * income * status * verbal, data = teengamb)
+step3 <- stepAIC(step_log, direction = "both")
+step3$anova
+
+summary(lm(sqrt(gamble) ~ as.factor(sex) + income + status + verbal + as.factor(sex):income + 
+             as.factor(sex):status + income:status + as.factor(sex):verbal + 
+             status:verbal + as.factor(sex):status:verbal, data = teengamb))
+
+plot(lm(gamble ~ ., data = teengamb))
+plot(step_lm)
+
+fit_lm <- lm(gamble ~ as.factor(sex) + income + status + as.factor(sex):income + income:status, data = teengamb)
+summary(fit_lm)
+plot(fit_lm)
+
+fit_lm2 <- lm(log(gamble + 0.1) ~ as.factor(sex) * income, data = teengamb)
+summary(fit_lm2)
+plot(fit_lm)
+
+ggplot(data = teengamb, aes(x = income, y = gamble, colour = as.factor(sex))) +
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = FALSE)
+
+```
+
+
+#### final model
+
+https://www.rpubs.com/amnshhbddn/267915
+https://rstudio-pubs-static.s3.amazonaws.com/267915_44a89940b5754134b1573afad335a70c.html#exercise-3-teengamb-gambling-data
+http://www.utstat.utoronto.ca/reid/sta2201s/2012/hw3soln.pdf
+https://stat.ethz.ch/education/semesters/as2011/asr/Uebungen/solution3.pdf
+
+skewed 를 고려하여 Log를 취한 모형이 설명력은 떨어지나 diagnosis에서 문제가 없어
+
+
+### Problem 2
+
+_Plot the ToothGrowth data with len as the response. Fit a linear model to the data and check for possible simplification. Display the fitted regression lines on top of the data._
+
+#### model fitting
+`len`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.
+
+```{r -model-fitting}
+
+data(ToothGrowth)
+head(ToothGrowth)
+
+str(ToothGrowth)
+table(ToothGrowth$supp)
+table(ToothGrowth$dose)
+?ToothGrowth
+
+pig_lm <-  lm(len ~ supp + dose, data = ToothGrowth)
+summary(pig_lm)
+
+ggpairs(tg, legend = 1, 
+        mapping = aes(colour = sex),
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+ggplot(data = ToothGrowth, aes(x = dose, y = len, colour = supp))+
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = FALSE)
+
+ggplot(data = teengamb, aes(x = as.factor(sex), y = income))+
+  geom_boxplot()
+
+
+```
+
+
+http://rstudio-pubs-static.s3.amazonaws.com/36933_2f77a95d4d1e47df81c1dd5047e61016.html
+
+https://rpubs.com/akonkel/ToothGrowth
+
+
+### Problem 3
+
+_Find a good model for the uswages data with wages as the response and all the other variables as predictors._

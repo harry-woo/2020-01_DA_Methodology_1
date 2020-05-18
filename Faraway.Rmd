@@ -10,7 +10,7 @@ output:
     df_print: paged
 mainfont: NanumGothic
 html_notebook: default
-title: "Faraway"
+title: "Faraway Ch2"
 ---
 
 ```{r setup, include = FALSE}
