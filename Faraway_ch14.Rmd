@@ -176,3 +176,5 @@ https://rpubs.com/akonkel/ToothGrowth
 ### Problem 3
 
 _Find a good model for the uswages data with wages as the response and all the other variables as predictors._
+
+http://rstudio-pubs-static.s3.amazonaws.com/316501_10093f3aaff0490ca23c8bd3404185fc.html
