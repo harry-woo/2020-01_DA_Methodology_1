@@ -132,7 +132,14 @@ http://www.utstat.utoronto.ca/reid/sta2201s/2012/hw3soln.pdf
 https://stat.ethz.ch/education/semesters/as2011/asr/Uebungen/solution3.pdf
 https://github.com/peach07up/stat420/blob/master/hw12/420Hw06ans.pdf
 
+https://github.com/peach07up/stat420/blob/master/hw/stat420_hw7_solutions.pdf
+
+
 skewed 를 고려하여 Log를 취한 모형이 설명력은 떨어지나 diagnosis에서 문제가 없어
+
+
+
+
 
 
 ### Problem 2
@@ -200,6 +207,14 @@ ggplot(data = ToothGrowth2, aes(x = dose, y = len, colour = supp))+
 http://rstudio-pubs-static.s3.amazonaws.com/36933_2f77a95d4d1e47df81c1dd5047e61016.html
 
 https://rpubs.com/akonkel/ToothGrowth
+
+이거인듯...
+https://cran.r-project.org/web/packages/doBy/vignettes/linest-lsmeans.pdf
+
+https://rpubs.com/achandle13/toothgrowthanalysis
+
+https://rstudio-pubs-static.s3.amazonaws.com/138289_162f1513480f41ddbd25623ac569fe97.html
+
 
 
 ### Problem 3
@@ -305,4 +320,5 @@ vif(wage_lm2)
 
 
 http://rstudio-pubs-static.s3.amazonaws.com/316504_1d7d88789c08404096c69a20783ae481.html
-
+http://rstudio-pubs-static.s3.amazonaws.com/335533_0cbce6b9c7964400a70a86e8da79238a.html
+https://github.com/peach07up/stat420/blob/master/hw12/420Hw07ans.pdf
