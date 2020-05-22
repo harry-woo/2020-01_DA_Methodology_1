@@ -40,6 +40,7 @@ library(purrr)
 library(GGally)
 library(MASS)
 library(car)
+library(tibble)
 
 ```
 
@@ -51,12 +52,10 @@ library(car)
 
 data(teengamb)
 head(teengamb)
+?teengamb
 
 tg <- teengamb %>% 
   mutate(sex = factor(sex, labels = c("male", "female")))
-
-tg_lm <-  lm(gamble ~ sex + status + income + verbal, data = teengamb)
-summary(tg_lm)
 
 ggpairs(tg, legend = 1, 
         mapping = aes(colour = sex),
@@ -68,49 +67,41 @@ ggpairs(tg, legend = 1,
                                               alignPercent = 0.8))) +
   theme(legend.position = "bottom")
 
-ggplot(data = teengamb, aes(x = as.factor(sex), y = status))+
-  geom_boxplot()
+```
 
-ggplot(data = teengamb, aes(x = as.factor(sex), y = income))+
-  geom_boxplot()
+```{r}
 
+tg_lm <- lm(gamble ~ sex + status + income + verbal, data = tg)
+summary(tg_lm)
+shapiro.test(tg_lm$residuals)
+
+tg2 <- tg %>% 
+  mutate(gamble = ifelse(gamble == 0, gamble + 0.1, gamble))
+
+tg2_lm <- lm(log(gamble) ~ sex + status + income + verbal, data = tg2)
+summary(tg2_lm)
+plot(tg2_lm)
+shapiro.test(tg2_lm$residuals)
+
+tg2_lm2 <- lm(log(gamble) ~ sex + status + log(income) + verbal, data = tg2)
+summary(tg2_lm2)
+plot(tg2_lm2)
+shapiro.test(tg2_lm2$residuals)
 
 ```
+
 
 #### interactions
 
 ```{r teengamb-interactions}
 
+tg_lm3 <- lm(log(gamble + 0.1) ~ sex + status + income + verbal + 
+               sex:status + sex:income + sex:verbal, data = tg)
+summary(tg_lm3)
 
-str(teengamb)
-table(teengamb$verbal)
-
-step_lm <- lm(gamble ~ as.factor(sex) * income * status * verbal, data = teengamb)
-step <- stepAIC(step_lm, direction = "both")
-step$anova
-
-step_sq <- lm(sqrt(gamble) ~ as.factor(sex) * income * status * verbal, data = teengamb)
-step2 <- stepAIC(step_sq, direction = "both")
-step2$anova
-
-step_log <- lm(log(gamble + 0.1) ~ as.factor(sex) * income * status * verbal, data = teengamb)
-step3 <- stepAIC(step_log, direction = "both")
-step3$anova
-
-summary(lm(sqrt(gamble) ~ as.factor(sex) + income + status + verbal + as.factor(sex):income + 
-             as.factor(sex):status + income:status + as.factor(sex):verbal + 
-             status:verbal + as.factor(sex):status:verbal, data = teengamb))
-
-plot(lm(gamble ~ ., data = teengamb))
-plot(step_lm)
-
-fit_lm <- lm(gamble ~ as.factor(sex) + income + status + as.factor(sex):income + income:status, data = teengamb)
-summary(fit_lm)
-plot(fit_lm)
-
-fit_lm2 <- lm(log(gamble + 0.1) ~ as.factor(sex) * income, data = teengamb)
-summary(fit_lm2)
-plot(fit_lm)
+shapiro.test(tg_lm$residuals)
+shapiro.test(tg_lm2$residuals)
+shapiro.test(tg_lm3$residuals)
 
 ggplot(data = teengamb, aes(x = income, y = gamble, colour = as.factor(sex))) +
   geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = FALSE)
@@ -124,6 +115,7 @@ https://www.rpubs.com/amnshhbddn/267915
 https://rstudio-pubs-static.s3.amazonaws.com/267915_44a89940b5754134b1573afad335a70c.html#exercise-3-teengamb-gambling-data
 http://www.utstat.utoronto.ca/reid/sta2201s/2012/hw3soln.pdf
 https://stat.ethz.ch/education/semesters/as2011/asr/Uebungen/solution3.pdf
+https://github.com/peach07up/stat420/blob/master/hw12/420Hw06ans.pdf
 
 skewed 를 고려하여 Log를 취한 모형이 설명력은 떨어지나 diagnosis에서 문제가 없어
 
@@ -178,3 +170,102 @@ https://rpubs.com/akonkel/ToothGrowth
 _Find a good model for the uswages data with wages as the response and all the other variables as predictors._
 
 http://rstudio-pubs-static.s3.amazonaws.com/316501_10093f3aaff0490ca23c8bd3404185fc.html
+
+```{r ch14-3-EDA}
+
+data(uswages)
+head(uswages)
+
+str(uswages)
+summary(uswages)
+sum(!complete.cases(uswages)) #결측치 확인
+
+```
+
+```{r ch14-3-NA}
+
+uswages2 <- uswages %>% 
+  rownames_to_column() %>% 
+  mutate(exper = ifelse(exper < 0, NA, exper))
+
+head(uswages2)
+
+sum(is.na(uswages2$exper))
+uswages2 <- na.omit(uswages2)
+nrow(uswages2)
+
+```
+
+```{r ch14-3-factor}
+
+uswages2 %>% 
+  mutate(area_sum = ne + mw + we + so) %>% 
+  dplyr::select(area_sum) %>% 
+  table()
+
+uswages2 <- uswages2 %>% 
+  mutate(race = factor(race, labels = c("White", "Black")),
+         smsa = factor(smsa, labels = c("No", "Yes")),
+         area_temp = 1*ne + 2*mw + 3*we + 4*so,
+         area = factor(area_temp, labels = c("ne", "mw", "we", "so")),
+         pt = factor(pt, labels = c("No", "Yes"))) %>% 
+  dplyr::select(-c("ne", "mw", "we", "so","area_temp"))
+
+summary(uswages2)
+str(uswages2)
+
+uswages2 %>% 
+  mutate(wage = log(wage)) %>% 
+  dplyr::select(-"rowname") %>% 
+  ggpairs()
+
+```
+
+```{r 14-3-lm1}
+
+wage_lm <- lm(wage ~ educ + exper + race + smsa + pt + area, data = uswages2)
+summary(wage_lm)
+plot(wage_lm)
+
+```
+
+
+```{r 14-3-lm2}
+
+wage_lm2 <- lm(log(wage) ~ educ + exper + race + smsa + pt + area, data = uswages2)
+summary(wage_lm2)
+plot(wage_lm2)
+
+```
+
+```{r ch14-3-res}
+
+uswages3 <- uswages2[-c(1545, 1017, 1550),]
+wage_lm3 <- lm(log(wage) ~ educ + exper + race + smsa + pt + area, data = uswages3)
+summary(wage_lm3)
+plot(wage_lm3)
+
+shapiro.test(residuals(wage_lm3))
+plot(cooks.distance(wage_lm2))
+
+step <- stepAIC(wage_lm2, direction = "both")
+step$anova
+
+step <- stepAIC(wage_lm3, direction = "both")
+step$anova
+
+wage_lm4 <- lm(log(wage) ~ educ + exper + race + smsa + pt, data = uswages3)
+summary(wage_lm4)
+plot(wage_lm4)
+
+plot(x = uswages2$area, y = uswages2$wage, ylim = c(0, 3000))
+
+summary(lm(log(wage) ~ educ + exper + race + smsa + pt + area2, data = uswages3))
+
+vif(wage_lm2)
+
+```
+
+
+http://rstudio-pubs-static.s3.amazonaws.com/316504_1d7d88789c08404096c69a20783ae481.html
+
