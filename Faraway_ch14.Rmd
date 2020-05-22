@@ -41,6 +41,7 @@ library(GGally)
 library(MASS)
 library(car)
 library(tibble)
+library(gridExtra)
 
 ```
 
@@ -95,16 +96,30 @@ shapiro.test(tg2_lm2$residuals)
 
 ```{r teengamb-interactions}
 
-tg_lm3 <- lm(log(gamble + 0.1) ~ sex + status + income + verbal + 
-               sex:status + sex:income + sex:verbal, data = tg)
-summary(tg_lm3)
+inter1 <- ggplot(data = tg2, aes(x = income, y = gamble, colour = sex)) +
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
+  theme(legend.position = "bottom")
+inter2 <- ggplot(data = tg2, aes(x = status, y = gamble, colour = sex)) +
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
+  theme(legend.position = "bottom")
+inter3 <- ggplot(data = tg2, aes(x = verbal, y = gamble, colour = sex)) +
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
+  theme(legend.position = "bottom")
+grid.arrange(inter1, inter2, inter3, ncol = 3, top = "Finding interactions by sex")
 
-shapiro.test(tg_lm$residuals)
-shapiro.test(tg_lm2$residuals)
-shapiro.test(tg_lm3$residuals)
 
-ggplot(data = teengamb, aes(x = income, y = gamble, colour = as.factor(sex))) +
-  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = FALSE)
+tg2_lm3 <- lm(log(gamble) ~ sex + status + log(income) + verbal + 
+                sex*status + sex*log(income) + sex*verbal, data = tg2)
+summary(tg2_lm3)
+plot(tg2_lm3)
+shapiro.test(tg2_lm3$residuals)
+
+
+tg2_lm4 <- lm(log(gamble) ~ sex*status + sex*income + sex*verbal, data = tg2)
+summary(tg2_lm4)
+plot(tg2_lm4)
+shapiro.test(tg2_lm4$residuals)
+
 
 ```
 
@@ -140,8 +155,7 @@ table(ToothGrowth$dose)
 pig_lm <-  lm(len ~ supp + dose, data = ToothGrowth)
 summary(pig_lm)
 
-ggpairs(tg, legend = 1, 
-        mapping = aes(colour = sex),
+ggpairs(ToothGrowth, mapping = aes(colour = supp),
         lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
         diag = list(discrete="barDiag", 
                     continuous = wrap("densityDiag", alpha = 0.5 )),
@@ -151,14 +165,37 @@ ggpairs(tg, legend = 1,
   theme(legend.position = "bottom")
 
 ggplot(data = ToothGrowth, aes(x = dose, y = len, colour = supp))+
-  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = FALSE)
-
-ggplot(data = teengamb, aes(x = as.factor(sex), y = income))+
-  geom_boxplot()
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE)
 
 
 ```
 
+```{r}
+
+pig_lm2 <- lm(len ~ supp*dose, data = ToothGrowth)
+summary(pig_lm2)
+
+pig_lm2_step <- stepAIC(pig_lm2, direction = "back")
+pig_lm2_step$anova
+
+prediction <- data.frame(len_pred = predict(pig_lm2, data = ToothGrowth))
+
+ToothGrowth2 <- ToothGrowth %>% 
+  mutate(len_pred = predict(pig_lm2, data = ToothGrowth))
+
+pred_conf <- predict(pig_lm2, data = ToothGrowth, interval = "confidence")
+
+ToothGrowth2 <- cbind(ToothGrowth2, pred_conf)
+
+ggplot(data = ToothGrowth2, aes(x = dose, y = len, colour = supp))+
+  geom_point() + 
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = supp, colour=NULL), alpha = 0.1) +
+  geom_line(aes(x = dose, y = len_pred), size = 1)
+
+
+
+
+```
 
 http://rstudio-pubs-static.s3.amazonaws.com/36933_2f77a95d4d1e47df81c1dd5047e61016.html
 
