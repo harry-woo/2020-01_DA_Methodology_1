@@ -1,0 +1,120 @@
+---
+title: "Faraway_ch6"
+author: "Harry Woo"
+date: '2020 5 26 '
+output: html_document
+---
+
+
+## Faraway Chapter 6 Diagnostics
+### Problem 1
+
+_Using the sat dataset, fit a model with the total SAT score as the response and expend, salary, ratio and takers as predictors. Perform regression diagnostics on this model to answer the following questions. Display any plots that are relevant. Do not provide any plots about which you have nothing to say. Suggest possible improvements or corrections to the model where appropriate._
+
+
+```{r load packages, message=FALSE, warning=FALSE, include=TRUE}
+
+library(faraway)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(pander)
+library(gt)
+library(officer)
+library(flextable)
+library(ellipse) 
+library(purrr)
+library(GGally)
+library(MASS)
+library(car)
+library(tibble)
+library(gridExtra)
+
+```
+
+```{r problem-1-model-fitting}
+
+data("sat")
+head(sat)
+str(sat)
+summary(sat)
+
+ggpairs(sat, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+
+```
+
+```{r}
+
+sat_math <- sat %>% 
+  dplyr::select(-c("verbal", "total")) %>% 
+  rename(score = math) %>% 
+  mutate(group = "math")
+
+sat_verbal <- sat %>% 
+  dplyr::select(-c("math", "total")) %>% 
+  rename(score = verbal) %>% 
+  mutate(group = "verbal")
+
+sat2 <- rbind(sat_math, sat_verbal)
+
+ggpairs(sat2, aes(colour = group), 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+```
+
+```{r}
+
+sat_lm <- lm(total ~ expend + salary + ratio + takers, data = sat)
+summary(sat_lm)
+
+```
+
+#### (a) Check the constant variance assumption for the errors.
+
+```{r}
+
+plot(sat_lm)
+
+ncvTest(sat_lm)
+
+```
+
+
+#### (b) Check the normality assumption.
+
+```{r}
+
+shapiro.test(sat_lm$residuals)
+
+```
+
+#### (c) Check for large leverage points.
+
+
+#### (d) Check for outliers.
+
+
+#### (e) Check for influential points.
+
+
+#### (f) Check the structure of the relationship between the predictors and the response.
+
+
+
+### Problem 4
+_For the swiss data, fit a model with Fertility as the response and the other variables as predictors. Answer the questions posed in the first question._
+
