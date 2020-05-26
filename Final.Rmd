@@ -1,0 +1,13 @@
+---
+title: "Final_Assignment"
+author: "Harry Woo"
+date: '2020 5 26 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+https://socialsciences.mcmaster.ca/jfox/Courses/SPIDA/
