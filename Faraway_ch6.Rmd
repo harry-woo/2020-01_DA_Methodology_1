@@ -1,6 +1,7 @@
 ---
 title: "Faraway_ch6"
 author: "Harry Woo"
+<<<<<<< HEAD
 date: '2020 5 26 '
 output: html_document
 ---
@@ -117,4 +118,20 @@ shapiro.test(sat_lm$residuals)
 
 ### Problem 4
 _For the swiss data, fit a model with Fertility as the response and the other variables as predictors. Answer the questions posed in the first question._
+=======
+date: '2020 5 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+https://cgrudz.github.io/teaching/stat_757_2019_fall/assignments/Homework_6_solutions.html
+http://rstudio-pubs-static.s3.amazonaws.com/472713_24a5cd3c07b84ee7934acc05e4d7495e.html
+http://www-personal.umich.edu/~yugtmath/Stats_500_Linear_Model.html#[17,%22XYZ%22,72,720,null]
+https://rpubs.com/myampol/MY621-LMR-CH6-EX1-P97
+https://rstudio-pubs-static.s3.amazonaws.com/38964_56361cc14c414ab6bf5676ad897b8943.html
+
+>>>>>>> 23ad16c6cfeaa3d8f5750459bd115438e7c70ec5
 

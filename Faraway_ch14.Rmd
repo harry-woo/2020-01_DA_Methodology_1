@@ -31,12 +31,6 @@ library(faraway)
 library(ggplot2)
 library(dplyr)
 library(knitr)
-library(pander)
-library(gt)
-library(officer)
-library(flextable)
-library(ellipse) 
-library(purrr)
 library(GGally)
 library(MASS)
 library(car)
@@ -46,14 +40,12 @@ library(gridExtra)
 ```
 
 
-#### model fitting
-`gamble`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.
+`teengamb` 데이터에서 실제 factor 변수인 `sex`를 factor로 변환하고, `ggpairs`를 통해 성별 기준으로 데이터의 분포형태를 관찰하였다. `income`과 `gamble`은 반드시 0 이상의 값을 가지게 된다는 점과 치우침의 형태를 감안하여 추후 로그변환을 시도할 필요가 있는 것으로 보이며, 셩별에 따른 `status`, `gamble`의 차이가 두드러지게 나타난다.
 
 ```{r teengamb-model-fitting}
 
 data(teengamb)
 head(teengamb)
-?teengamb
 
 tg <- teengamb %>% 
   mutate(sex = factor(sex, labels = c("male", "female")))
@@ -70,75 +62,101 @@ ggpairs(tg, legend = 1,
 
 ```
 
+문제에서 요구한 바와 같이 `gamble`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.성별과 소득만 통계적으로 유의하며, 결정계수는 0.53 수준에 p-value는 유의수준 0.05에서 매우 유의하다. 그러나 모형진단 결과 및 shapiro test 결과 잔차의 정규성 및 등분산성 가정을 충족하지 못하는 문제가 존재하여, `gamble` 및 `income`의 로그변환을 시도하였다.
+
 ```{r}
 
 tg_lm <- lm(gamble ~ sex + status + income + verbal, data = tg)
 summary(tg_lm)
+plot(tg_lm)
+
 shapiro.test(tg_lm$residuals)
+ncvTest(tg_lm)
 
+```
+
+로그변환을 위하여 0값이 `gamble` 및 `income`에 0.1을 더해주고 해당 데이터를 `tg2`로 저장하였다. `tg2`에 대하여 `gamble` 및 `income`에 로그를 취해 회귀모형을 적합한 결과, 결정계수는 다소 줄어들었으나 잔차의 정규성, 등분산성 문제가 크게 개선된 회귀모형이 적합되었다.
+
+```{r}
 tg2 <- tg %>% 
-  mutate(gamble = ifelse(gamble == 0, gamble + 0.1, gamble))
-
-tg2_lm <- lm(log(gamble) ~ sex + status + income + verbal, data = tg2)
-summary(tg2_lm)
-plot(tg2_lm)
-shapiro.test(tg2_lm$residuals)
+  mutate(gamble = ifelse(gamble == 0, gamble + 0.1, gamble),
+         income = ifelse(income == 0, income + 0.1, income))
 
 tg2_lm2 <- lm(log(gamble) ~ sex + status + log(income) + verbal, data = tg2)
 summary(tg2_lm2)
 plot(tg2_lm2)
+
 shapiro.test(tg2_lm2$residuals)
+ncvTest(tg2_lm2)
 
 ```
 
 
-#### interactions
+문제에서 요구한 바와 같이 `sex`와 다른 설명변수 간의 교호작용을 검토해보았다. 아래의 plot에서 확인되는 바와 같이, `sex`에 따라 적합되는 회귀선의 기울기가 크게 변화하고 있음을 고려했을 때, `sex`에 따라 단순히 절편의 차이만 있는 것으로 보이는 `verbal`을 제외하고, `income` 및 `status`에 대해서는 `sex`와의  교호작용을 고려해 볼 필요가 있는 것으로 보인다.
+
 
 ```{r teengamb-interactions}
 
-inter1 <- ggplot(data = tg2, aes(x = income, y = gamble, colour = sex)) +
+inter1 <- ggplot(data = tg2, aes(x = log(income), y = log(gamble), colour = sex)) +
   geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
   theme(legend.position = "bottom")
-inter2 <- ggplot(data = tg2, aes(x = status, y = gamble, colour = sex)) +
+inter2 <- ggplot(data = tg2, aes(x = status, y = log(gamble), colour = sex)) +
   geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
   theme(legend.position = "bottom")
-inter3 <- ggplot(data = tg2, aes(x = verbal, y = gamble, colour = sex)) +
+inter3 <- ggplot(data = tg2, aes(x = verbal, y = log(gamble), colour = sex)) +
   geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
   theme(legend.position = "bottom")
 grid.arrange(inter1, inter2, inter3, ncol = 3, top = "Finding interactions by sex")
 
 
+```
+
+
+`verbal`을 제외한 교호작용을 추가하여 회귀모형을 `tg2_lm3`로 적합한 결과, 예상한 바와 달리 income과 verbal만이 유의한 것으로 관측되며, 탐험적 분석에서 관측되었던 `sex`의 영향력이 오히려 유의성을 잃는 결과가 나왔다. 
+
+```{r}
+
 tg2_lm3 <- lm(log(gamble) ~ sex + status + log(income) + verbal + 
-                sex*status + sex*log(income) + sex*verbal, data = tg2)
+                sex:status + sex:log(income), data = tg2)
 summary(tg2_lm3)
-plot(tg2_lm3)
-shapiro.test(tg2_lm3$residuals)
+
+```
 
 
-tg2_lm4 <- lm(log(gamble) ~ sex*status + sex*income + sex*verbal, data = tg2)
-summary(tg2_lm4)
-plot(tg2_lm4)
-shapiro.test(tg2_lm4$residuals)
+모형의 개선을 위하여 `stepAIC`를 통해 변수선택을 진행한 결과, 교호작용을 고려한 변수들이 제거되고 오히려 기존의 모델인 `tg2_lm2`이 최종 모형으로 채택되었다.
+
+```{r}
+
+tg2_lm4 <- stepAIC(tg2_lm3, direction = "both")
+tg2_lm4$anova
 
 
 ```
 
 
-#### final model
+Log를 취하지 않은 모형에 비해 모형의 설명력이 다소 저하되었고 설명에 다소 어려움이 존재하는 측면이 있으나, 음수가 아닌 `gamble`, `income`의 수치를 기반으로 하는 정상적이고 자연스러운 모델일 뿐만 아니라, 잔차의 등분산성 및 정규성 문제를 크게 개선한다는 측면에서 `tg2_lm2`를 최선의 모형으로 선정하였다.
 
-https://www.rpubs.com/amnshhbddn/267915
-https://rstudio-pubs-static.s3.amazonaws.com/267915_44a89940b5754134b1573afad335a70c.html#exercise-3-teengamb-gambling-data
-http://www.utstat.utoronto.ca/reid/sta2201s/2012/hw3soln.pdf
-https://stat.ethz.ch/education/semesters/as2011/asr/Uebungen/solution3.pdf
-https://github.com/peach07up/stat420/blob/master/hw12/420Hw06ans.pdf
-
-https://github.com/peach07up/stat420/blob/master/hw/stat420_hw7_solutions.pdf
+해당 모형에 따르면 여성의 `gamble` 액수가 남성에 비해 20% 수준에 불과하다. 또한 `verbal`이 1 증가할 수록 `gamble`은 약 33% 감소하고, `status`가 1 증가하면 `gamble`은 약 4% 증가한다. log(income)이 1 증가하면 log(gamble)은 약 1.12 증가하며, 이는 `gamble`이 `income`의 약 1.12 제곱 수준으로 지수적 형태의 증가를 보임을 보여준다.
 
 
-skewed 를 고려하여 Log를 취한 모형이 설명력은 떨어지나 diagnosis에서 문제가 없어
+```{r}
 
+summary(tg2_lm2)
+exp(tg2_lm2$coefficients)
 
+tg2 %>% 
+  mutate(gamble = log(gamble), income = log(income)) %>% 
+  ggpairs(., legend = 1, 
+        mapping = aes(colour = sex),
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
 
+```
 
 
 
@@ -146,8 +164,7 @@ skewed 를 고려하여 Log를 취한 모형이 설명력은 떨어지나 diagno
 
 _Plot the ToothGrowth data with len as the response. Fit a linear model to the data and check for possible simplification. Display the fitted regression lines on top of the data._
 
-#### model fitting
-`len`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.
+
 
 ```{r -model-fitting}
 
@@ -157,7 +174,12 @@ head(ToothGrowth)
 str(ToothGrowth)
 table(ToothGrowth$supp)
 table(ToothGrowth$dose)
-?ToothGrowth
+
+```
+
+`len`를 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `tg_lm`을 적합하였다.
+
+```{r}
 
 pig_lm <-  lm(len ~ supp + dose, data = ToothGrowth)
 summary(pig_lm)
@@ -171,11 +193,23 @@ ggpairs(ToothGrowth, mapping = aes(colour = supp),
                                               alignPercent = 0.8))) +
   theme(legend.position = "bottom")
 
-ggplot(data = ToothGrowth, aes(x = dose, y = len, colour = supp))+
-  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE)
+```
 
+
+산점도에 ggplot2의 stat_smooth를 사용하여 회귀직선을 적합한 결과 및 Interaction plot을 통한 검토 결과 `supp`에 따른 기울기 차이가 존재하여 두 설명변수 사이의 교호작용을 검토할 필요성이 있음을 확인할 수 있다.
+
+```{r}
+
+ggplot(data = ToothGrowth, aes(x = dose, y = len, colour = supp))+
+  geom_point() + stat_smooth(method = lm, se = TRUE)
+
+interaction.plot(ToothGrowth$dose, ToothGrowth$supp, ToothGrowth$len,
+                 xlab = "Dose", ylab = "Length", main = "Interaction Plot")
 
 ```
+
+
+교호작용을 고려한 회귀모형을 `pig_lm2`로 적합하였다. simplication 가능성을 검토하기 위하여 stepAIC를 통해 변수선택을 실시한 결과, 원래 식이 final model로 제시되었다. 결정계수 및 p-value 모두 `pig_lm2`에서 개선되었음을 확인할 수 있다. 모든 설명변수가 유의한 것으로 나타났는데, OJ보다 VC를 급여할 때 len이 8.3 가량 짧고, OJ 급여시 dose가 1 증가함에 따라 len도 7.8가량 늘어나며, VC 급여시 이 증가분이 3.9가량 더 늘어나는 것을 확인할 수 있다.
 
 ```{r}
 
@@ -185,7 +219,14 @@ summary(pig_lm2)
 pig_lm2_step <- stepAIC(pig_lm2, direction = "back")
 pig_lm2_step$anova
 
-prediction <- data.frame(len_pred = predict(pig_lm2, data = ToothGrowth))
+anova(pig_lm, pig_lm2_step)
+
+```
+
+
+predict 함수를 활용하여 ToothGrowth 데이터에 pig_lm2 모형을 통한 len 예측값 및 신뢰구간을 추가하여 ToothGrowth2 로 저장하였다. ToothGrowth3 데이터를 활용하여 산점도 위에 pig_lm2 모형으로 적합한 회귀직선을 아래와 같이 표시하였다.
+
+```{r}
 
 ToothGrowth2 <- ToothGrowth %>% 
   mutate(len_pred = predict(pig_lm2, data = ToothGrowth))
@@ -195,25 +236,46 @@ pred_conf <- predict(pig_lm2, data = ToothGrowth, interval = "confidence")
 ToothGrowth2 <- cbind(ToothGrowth2, pred_conf)
 
 ggplot(data = ToothGrowth2, aes(x = dose, y = len, colour = supp))+
-  geom_point() + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = supp, colour=NULL), alpha = 0.1) +
-  geom_line(aes(x = dose, y = len_pred), size = 1)
-
-
-
+  geom_point() + geom_ribbon(aes(ymin = lwr, ymax = upr, 
+                                 fill = supp, colour=NULL), alpha = 0.1) +
+  geom_line(aes(x = dose, y = len_pred, colour = supp), size = 1)
 
 ```
 
-http://rstudio-pubs-static.s3.amazonaws.com/36933_2f77a95d4d1e47df81c1dd5047e61016.html
+#### 추가 분석 실시
 
-https://rpubs.com/akonkel/ToothGrowth
+문제에서 주어진 내용 이외에 추가로 분석을 실시해보았다. 먼저 shapiro.test 결과 len은 정규성을 충족하고, var.test 결과 등분산 가정을 충족하는 바, two sample t-test 실시가 가능하다. t-test 실시 결과 p-value가 0.06으로, 미세한 차이로 유의수준 0.05에서 귀무가설을 기각할 수 없다. 그러므로 supp 종류(OJ or VC)가 len에 미치는 영향이 통계적으로 매우 유의하다고 할 수 없다. 
 
-이거인듯...
-https://cran.r-project.org/web/packages/doBy/vignettes/linest-lsmeans.pdf
 
-https://rpubs.com/achandle13/toothgrowthanalysis
+```{r}
 
-https://rstudio-pubs-static.s3.amazonaws.com/138289_162f1513480f41ddbd25623ac569fe97.html
+shapiro.test(ToothGrowth$len)
+var.test(len ~ supp, data = ToothGrowth)
+t.test(len ~ supp, data = ToothGrowth, var.equal = TRUE)
+
+```
+
+barplot 상에서는 dose가 2일 때와 아닐 때 supp의 영향이 달라는 것이 보여, 이를 분석하고자 더미변수를 조정하여 회귀모형을 적합, 변수선택을 진행하였으며, `pig_lm4` 형태의 회귀모형이 최종 선택되었다. 기존 모델보다 결정계수, p-value는 개선되었으나 산점도 그래프 상에 회귀직선을 표기하는 데에는 한계가 있었다.
+
+```{r}
+
+ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len, fill = supp))+
+  geom_bar(stat = "identity", position = "dodge") 
+
+ToothGrowth2 <- ToothGrowth %>% 
+  mutate(dose1 = ifelse(dose == 1, 1, 0),
+         dose2 = ifelse(dose == 2, 1, 0))
+
+pig_lm3 <- lm(len ~ supp + dose1 + dose2 + supp:dose1 + supp:dose2, data = ToothGrowth2)
+summary(pig_lm3)
+
+pig_lm3_step <- stepAIC(pig_lm3, direction = "both")
+pig_lm3_step$anova
+
+pig_lm4 <- lm(len ~ supp + dose1 + dose2 + supp:dose2, data = ToothGrowth2)
+summary(pig_lm4)
+
+```
 
 
 
@@ -223,6 +285,8 @@ _Find a good model for the uswages data with wages as the response and all the o
 
 http://rstudio-pubs-static.s3.amazonaws.com/316501_10093f3aaff0490ca23c8bd3404185fc.html
 
+`uswages` 데이터를 로드하여 기술통계량을 확인한 결과, `exper`, 즉 경력이 음수로 들어간 이상데이터가 확인되어 처리가 필요한 것으로 판단된다.
+
 ```{r ch14-3-EDA}
 
 data(uswages)
@@ -230,9 +294,11 @@ head(uswages)
 
 str(uswages)
 summary(uswages)
-sum(!complete.cases(uswages)) #결측치 확인
 
 ```
+
+
+`dplyr` 패키지가 row name을 없애는 문제를 해결하기 위하여 `tibble` 패키지를 활용하여 row name을 별도 열로 저장하였으며, `exper`가 0보다 작은 경우 결측치로 처리하였다.
 
 ```{r ch14-3-NA}
 
@@ -240,21 +306,32 @@ uswages2 <- uswages %>%
   rownames_to_column() %>% 
   mutate(exper = ifelse(exper < 0, NA, exper))
 
-head(uswages2)
+```
 
+
+이후 분석의 효과성 제고를 위하여 해당 결측치 33개를 제외하였다.
+
+```{r}
+
+sum(!complete.cases(uswages))
 sum(is.na(uswages2$exper))
 uswages2 <- na.omit(uswages2)
 nrow(uswages2)
 
 ```
 
+
+dummy 변수로 입력되어 있는 `ne`, `mw`, `we`, `so`를 보다 용이하게 handling 하기 위하여 `area` 라는 열의 factor 데이터로 전환하였다. 또한 `race`, `smsa`, `pt` 등도 데이터의 성격에 맞게 factor 데이터로 전환하였다. 
+
 ```{r ch14-3-factor}
 
+#지역 데이터 확인
 uswages2 %>% 
   mutate(area_sum = ne + mw + we + so) %>% 
   dplyr::select(area_sum) %>% 
   table()
 
+#factor 변환
 uswages2 <- uswages2 %>% 
   mutate(race = factor(race, labels = c("White", "Black")),
          smsa = factor(smsa, labels = c("No", "Yes")),
@@ -263,15 +340,30 @@ uswages2 <- uswages2 %>%
          pt = factor(pt, labels = c("No", "Yes"))) %>% 
   dplyr::select(-c("ne", "mw", "we", "so","area_temp"))
 
+```
+
+
+`ggpairs` 를 통해 데이터의 분포형태를 관찰한 결과, `wage`는 분포의 치우침 및 형태를 고려할 때 log 변환으로 처리할 필요가 보인다.
+
+```{r}
+
 summary(uswages2)
 str(uswages2)
 
 uswages2 %>% 
-  mutate(wage = log(wage)) %>% 
   dplyr::select(-"rowname") %>% 
-  ggpairs()
+  ggpairs(mapping = aes(colour = pt),
+          lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+          diag = list(discrete="barDiag", 
+                      continuous = wrap("densityDiag", alpha = 0.5 )),
+          upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                       continuous = wrap("cor", size = 4, alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
 
 ```
+
+
+우선 로그변환 없이 `wage`를 종속변수로, 나머지 설명변수 모두를 포함하여 회귀모형을 적합하였다. p-value는 매우 유의하나 결정계수가 0.19로 낮고 diagnostic plot 상에서도 잔차의 정규성, 등분산성에 문제가 있는 것으로 판단된다. 또한, 해당 모형 상에서는 wage가 음수값이 도출될 수 있는 상황이나, 음수의 wage가 도출되는 것은 바람직하지 않다.
 
 ```{r 14-3-lm1}
 
@@ -281,6 +373,7 @@ plot(wage_lm)
 
 ```
 
+앞서 판단한 바와 같이 종속변수 `wage`를 로그 변환하여 회귀모형을 `wage_lm2`로 다시 적합하였다. 음수의 wage 가 도출되는 문제가 해결되었을 뿐만 아니라 결정계수 또한 약 2배에 가까운 0.37로 증가하였음을 확인할 수 있다. 변수별 유의성에 있어서는 여전히 area를 제외한 모든 변수가 매우 유의하다. 한편 모형 진단을 위한 plot을 검토한 결과, 잔차의 등분산성 및 정규성이 개선되었으나 여전히 문제가 남아있는 것으로 보인다.
 
 ```{r 14-3-lm2}
 
@@ -290,35 +383,36 @@ plot(wage_lm2)
 
 ```
 
+
+이를 개선하기 위하여 상기 diagostic 에서 지속적으로 outlier로 지목되는 3개의 데이터를 제외한 `uswages3`를 생성하여 다시 회귀모형을 적합해 보았다. p-value는 거의 유사하나 결정계수가 약 10%가량 개선되었음을 확인할 수 있다. diagnostic 상에서 잔차의 정규성 및 등분산성 또한 개선된 것이 확인된다. `ggpairs`에서도 관측할 수 있었던 여러 방면에서의 이상치를 모두 관리한다면 더욱 모델을 개선할 수 있을 것으로 보이나, 효율성의 측면에서 outlier 관리는 중단하고 이후 분석을 개시하였다.
+
 ```{r ch14-3-res}
 
 uswages3 <- uswages2[-c(1545, 1017, 1550),]
+
 wage_lm3 <- lm(log(wage) ~ educ + exper + race + smsa + pt + area, data = uswages3)
 summary(wage_lm3)
 plot(wage_lm3)
 
-shapiro.test(residuals(wage_lm3))
-plot(cooks.distance(wage_lm2))
 
-step <- stepAIC(wage_lm2, direction = "both")
-step$anova
+```
+
+`stepAIC` 함수를 활용하여 변수선택을 진행한 결과, `area` 변수가 제거되었으며 이에 따른 최종 모형을 `wage_lm4`로 저장하였다. 약 40%의 설명력을 가지며 모든 변수가 통계적으로 매우 유의하다. 교육수준 및 경력이 증가할 수록, 또한 표준대도시구역 거주 시 주급이 증가하며, 백인에 비해 흑인의 주급이 약 80% 수준이며, 파트타임 근무자의 주급은 일반 근무자의 30% 수준이었다.
+
+변수 상 다중공선성 관련하여서는 vif가 1 수준으로 이슈가 없었으나, 잔차의 정규성, 등분산성 관련하여서는 모델을 개선할 여지가 있는 것으로 판단된다.
+
+```{r}
 
 step <- stepAIC(wage_lm3, direction = "both")
 step$anova
 
 wage_lm4 <- lm(log(wage) ~ educ + exper + race + smsa + pt, data = uswages3)
 summary(wage_lm4)
-plot(wage_lm4)
+exp(wage_lm4$coefficients)
 
-plot(x = uswages2$area, y = uswages2$wage, ylim = c(0, 3000))
-
-summary(lm(log(wage) ~ educ + exper + race + smsa + pt + area2, data = uswages3))
-
-vif(wage_lm2)
+vif(wage_lm4)
+shapiro.test(wage_lm4$residuals)
+ncvTest(wage_lm4)
 
 ```
 
-
-http://rstudio-pubs-static.s3.amazonaws.com/316504_1d7d88789c08404096c69a20783ae481.html
-http://rstudio-pubs-static.s3.amazonaws.com/335533_0cbce6b9c7964400a70a86e8da79238a.html
-https://github.com/peach07up/stat420/blob/master/hw12/420Hw07ans.pdf
