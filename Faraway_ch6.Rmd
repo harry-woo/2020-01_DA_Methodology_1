@@ -1,9 +1,10 @@
 ---
 title: "Faraway_ch6"
 author: "Harry Woo"
-<<<<<<< HEAD
 date: '2020 5 26 '
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 
@@ -17,15 +18,9 @@ _Using the sat dataset, fit a model with the total SAT score as the response and
 
 library(faraway)
 library(ggplot2)
+library(GGally)
 library(dplyr)
 library(knitr)
-library(pander)
-library(gt)
-library(officer)
-library(flextable)
-library(ellipse) 
-library(purrr)
-library(GGally)
 library(MASS)
 library(car)
 library(tibble)
@@ -33,7 +28,11 @@ library(gridExtra)
 
 ```
 
-```{r problem-1-model-fitting}
+
+
+
+
+```{r}
 
 data("sat")
 head(sat)
@@ -77,7 +76,11 @@ ggpairs(sat2, aes(colour = group),
 
 ```
 
-```{r}
+#### Model Fitting
+
+문제에서 요구한 바와 같이 `total`을 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `sat_lm`을 적합하였다. 전체 모형의 결정계수는 0.825 수준에 p-value는 유의수준 0.05에서 매우 유의하다. 회귀계수 중 `takers`만 통계적으로 유의수준 0.05에서 유의한 것으로 나타난다.
+
+```{r ch6-1-model-fitting}
 
 sat_lm <- lm(total ~ expend + salary + ratio + takers, data = sat)
 summary(sat_lm)
@@ -88,14 +91,77 @@ summary(sat_lm)
 
 ```{r}
 
-plot(sat_lm)
+#par(mfrow = c(1, 2))
+#plot(sat_lm, which = 1)
+#plot(sat_lm, which = 3)
+
+diag1 <- ggplot(data = sat_lm, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = 2) +
+  geom_smooth(method = "loess") +
+  xlab("Fitted") + ylab("Residuals") + 
+  ggtitle(label = "Residuals vs. Fitted") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+diag2 <- ggplot(data = sat_lm, aes(x = .fitted, y = sqrt(abs(.resid)))) +
+  geom_point() + geom_smooth(method = "loess") +
+  xlab("Fitted") + ylab(expression(sqrt(abs(hat(epsilon))))) + 
+  ggtitle(label = "Residuals vs. sqrt(abs(Fitted))") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+grid.arrange(diag1, diag2, ncol = 2)
+
+```
+
+잔차와 추정치 사이의 관계를 산점도로 표현하여 검토한 결과, 잔차의 약한 비선형성이 관측되며, 950점을 전후로 두 그룹으로 분포가 나뉘어 등분산성에 문제가 있을 수 있는 것으로 보인다. 그러나 두 번째 plot인 $\sqrt{|\hat{\epsilon}|}$과 추정치 간의 관계에서는 등분산성에 큰 문제가 없는 것으로 관측된다.
+
+
+```{r}
+
+summary(lm(abs(residuals(sat_lm)) ~ fitted(sat_lm)))
+summary(lm(sqrt(abs(residuals(sat_lm))) ~ fitted(sat_lm)))
+
+```
+
+잔차의 절대값 및 제곱근과 추정치 간의 관계를 분석한 결과, p-value 가 모두 매우 높아 등분산성 가정을 기각할 수 없다.
+
+
+```{r}
+
+var.test(residuals(sat_lm)[fitted(sat_lm) >= 950], 
+         residuals(sat_lm)[fitted(sat_lm) < 950])
 
 ncvTest(sat_lm)
 
 ```
 
+첫 번째 plot에서 관측된 집단화 가능성과 관련하여, 950점을 전후로 잔차를 두 그룹으로 나누어 F test를 진행한 결과, p-value가 0.24로 등분산성 가정을 기각할 수 없다. 위의 분석에 따라 `sat` 데이터에는 non-constant variance 이슈가 있다고 할 수 없는 것으로 판단된다.
+
+추가로 `car` 패키지의 `ncvTest` 함수를 통해서도 검토한 결과, p = 0.40 으로 등분산성 가정을 기각할 수 없다.
+
 
 #### (b) Check the normality assumption.
+
+```{r}
+
+#plot(sat_lm, which = 2)
+
+diag3 <- ggplot(data = sat_lm, aes(sample = .stdresid)) +
+  stat_qq() + stat_qq_line() +
+  xlab("Theoretical Quantiles") + ylab("Standardized Residuals") +
+  ggtitle(label = "Normal Q-Q") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+diag4 <- ggplot(data = sat_lm, aes(x = .resid)) +
+  geom_histogram(bins = 10, fill = "steelblue", colour = "black") +
+  xlab("Residuals") + ggtitle(label = "Histogram") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+grid.arrange(diag3, diag4, ncol = 2)
+
+```
+
+정규성 검토를 위하여 Normal Q-Q plot을 검토한 결과, 거의 직선형태의 분포가 관측되었으며, 우상단에서 일부 직선을 벗어나는 값이 관측되나 정규성을 기각할 증거는 없는 것으로 판단된다. 잔차의 히스토그램 또한 종 형태에 가까운 모양이 관측되며 정규성 가정을 뒷받침하고 있는 것으로 보인다.
+
 
 ```{r}
 
@@ -103,35 +169,432 @@ shapiro.test(sat_lm$residuals)
 
 ```
 
+
+Shapiro-Wilk's Test 실시 결과 $p-value = 0.43 > 0.05$ 으로, 잔차의 정규성 가정(귀무가설)을 기각하지 못한다. 
+
+
 #### (c) Check for large leverage points.
+
+
+```{r}
+
+sat_hatv <- hatvalues(sat_lm)
+head(sat_hatv)
+sum(sat_hatv)
+
+```
+
+`hatvalues`를 통해 leverage를 `sat_hatv`로 생성하였다. 일반적으로 large leverage는 $2p/n$인 지점을 나타내고, `p = sum(sat_hatv)` 이므로, 간단히 large leverage point를 추려보면 다음과 같다.
+
+
+```{r}
+
+sat_large <- 2 * sum(sat_hatv) / length(sat_lm$fitted.values)
+
+sat %>% 
+  rownames_to_column() %>% rename(state = rowname) %>% 
+  mutate(hatv = hatvalues(sat_lm)) %>% 
+  filter(hatv > sat_large) %>% 
+  arrange(desc(hatv))
+
+```
+
+위의 4개 주가 large leverage points로 추정된다.
+
+
+```{r}
+
+sat_states <- row.names(sat)
+halfnorm(sat_hatv, labs = sat_states, ylab = "Leverages")
+abline(h = (2 * sum(sat_hatv) / length(sat_lm$fitted.values)), lty = 2)
+title(main = "Half-normal plot")
+
+```
+
+Half-normal plot을 통해 확인한 결과, Utah와 California가 명확히 Large leverage로 확인되며, Connecticut과 New Jersey는 large leverage로 분류할 수 있으나 그 정도는 상대적으로 낮은 것으로 보인다.
 
 
 #### (d) Check for outliers.
 
+```{r}
+
+set.seed(123)
+sat_stud <- rstudent(sat_lm)
+
+sat_stud2 <- as.data.frame(sat_stud) %>% 
+  rownames_to_column() %>% rename(state = rowname) %>% 
+  rename(stdresid = sat_stud) 
+ 
+```
+
+Bonferroni correction을 통한 outlier 확인을 위해 스튜던트 잔차를 `sat_stud2` 라는 데이터프레임으로 생성하였다.
+
+
+```{r}
+
+sat_stud2 %>% arrange(stdresid) %>% head(3)
+sat_stud2 %>% arrange(stdresid) %>% tail(3)
+
+#Bonferroni critical value
+sat_bcv <- qt(0.05 / (50*2), 44)
+sat_bcv
+
+sat_stud2 %>% filter(abs(stdresid) > abs(sat_bcv))
+
+
+```
+
+유의수준 0.05, 자유도 44 (50 - 변수 5 - 1 = 44) 기준으로 계산한 결과 에서 Bonferroni critical value = -3.53이며, 절대값을 통해 양측에서 outlier를 확인한 결과, 해당하는 outlier가 없음을 확인할 수 있다.
+
 
 #### (e) Check for influential points.
+
+```{r}
+
+sat_cook <- cooks.distance(sat_lm)
+
+par(mfrow = c(1, 2))
+halfnorm(sat_cook, 3, labs = sat_states, ylab="Cook’s distances")
+plot(sat_lm, which = 5)
+
+```
+
+Influential point 는 잔차와 leverage가 모두 큰 관측치로, Cooks's distance를 통해 확인할 수 있는 것처럼 Utah가 가장 큰 Influential point로 확인된다.
+
+모델 개선을 위하여 Utah를 제외한 모형을 적합해보면 다음과 같다.
+
+
+```{r}
+
+sat_noUtah <- sat %>% 
+  rownames_to_column() %>% rename(state = rowname) %>% 
+  filter(state != "Utah")
+
+sat_lm2 <- lm(total ~ expend + salary + ratio + takers, data = sat_noUtah)
+
+summary(sat_lm2)
+
+(sat_lm$coefficients - sat_lm2$coefficients) / sat_lm$coefficients
+
+```
+
+전체 모형의 결정계수는 0.84로 약간 증가하였고 p-value는 유사하다. 가장 주목할만한 점으로 회귀계수 중 `takers`에 이어 `ratio`가 추가로 유의해졌음을 확인할 수 있다. 한편, 회귀계수의 변동에서는 `expend`가 100% 이상 증가하고, `salary`는 약 90% 감소, `ratio`는 100% 이상 감소한 것을 확인할 수 있다.
+
+```{r}
+
+sat[row.names(sat) == "Utah",]
+
+```
 
 
 #### (f) Check the structure of the relationship between the predictors and the response.
 
+```{r}
 
+par(mfrow = c(2, 2))
+termplot(sat_lm, partial.resid = TRUE)
 
-### Problem 4
-_For the swiss data, fit a model with Fertility as the response and the other variables as predictors. Answer the questions posed in the first question._
-=======
-date: '2020 5 23 '
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 ```
 
-https://cgrudz.github.io/teaching/stat_757_2019_fall/assignments/Homework_6_solutions.html
-http://rstudio-pubs-static.s3.amazonaws.com/472713_24a5cd3c07b84ee7934acc05e4d7495e.html
-http://www-personal.umich.edu/~yugtmath/Stats_500_Linear_Model.html#[17,%22XYZ%22,72,720,null]
-https://rpubs.com/myampol/MY621-LMR-CH6-EX1-P97
-https://rstudio-pubs-static.s3.amazonaws.com/38964_56361cc14c414ab6bf5676ad897b8943.html
+`termplot` 함수를 통해 각 설명변수별로 종속변수와의 관계에 대한 partial residual plot을 작성하였다. `takers`를 제외한 설명변수들의 영향력은 회귀모형의 summary에서 보인 바와 같이 유의하지 않은 것으로 보이며, 산포의 정도에 있어서도 특이할 만한 점은 보이지 않는다. 
 
->>>>>>> 23ad16c6cfeaa3d8f5750459bd115438e7c70ec5
+`takers`는 상대적으로 밀집된 분포와 강한 관계성을 보이고 있다. 또한 40을 기준으로 두개의 그룹으로 구분할 수 있는 것으로 보인다.
+
+```{r}
+
+# takers >= 40
+
+summary(lm(total ~ expend + salary + ratio + takers, 
+           data = sat, subset = (takers >= 40)))
+
+# takers < 40
+
+summary(lm(total ~ expend + salary + ratio + takers, 
+           data = sat, subset = (takers < 40)))
+
+```
+
+`takers == 40`을 기준으로 데이터를 분리하여 회귀모형을 적합, summary를 도출한 결과, `takers < 40`에서 모형의 설명력, 유의성이 크게 나타나는 반면, `takers >= 40`에서는 모형의 설명력, 유의성이 크게 떨어지는 것으로 나타난다. 
+
+```{r}
+
+sat_takers <- sat %>% 
+  mutate(group = ifelse(takers >= 40, "takers>=40", "takers<40"))
+
+ggplot(data = sat_takers, aes(x = takers, y = total)) +
+  geom_point() + facet_grid(~ group) + stat_smooth(method = "lm")
+
+```
+
+`takers == 40`을 기준으로 데이터를 분리하여 scatter plot을 작성한 결과에서도, `takers < 40` 에서 `takers`에 따른 `total`의 변화가 강하게 나타남을 확인할 수 있다.
+
+
+
+
+### Problem 2
+_For the swiss data, fit a model with Fertility as the response and the other variables as predictors. Answer the questions posed in the first question._
+
+```{r}
+
+data("swiss")
+head(swiss)
+str(swiss)
+summary(swiss)
+
+ggpairs(swiss, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+
+```
+
+
+#### Model Fitting
+
+문제에서 요구한 바와 같이 `Fertility`을 종속변수로, 다른 변수를 설명변수로 하여 회귀모형 `sat_lm`을 적합하였다. 전체 모형의 결정계수는 0.71 수준에 p-value는 유의수준 0.05에서 매우 유의하다. 회귀계수의 경우, `Examination`을 제외한 모든 설명변수에서 통계적으로 유의한 것으로 나타난다.
+
+```{r ch6-2-model-fitting}
+
+swiss_lm <- lm(Fertility ~ Agriculture + Examination + Education + 
+                 Catholic + Infant.Mortality, data = swiss)
+summary(swiss_lm)
+
+```
+
+#### (a) Check the constant variance assumption for the errors.
+
+```{r}
+
+sw_diag1 <- ggplot(data = swiss_lm, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = 2) +
+  geom_smooth(method = "loess") +
+  xlab("Fitted") + ylab("Residuals") + 
+  ggtitle(label = "Residuals vs. Fitted") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+sw_diag2 <- ggplot(data = swiss_lm, aes(x = .fitted, y = sqrt(abs(.resid)))) +
+  geom_point() + geom_smooth(method = "loess") +
+  xlab("Fitted") + ylab(expression(sqrt(abs(hat(epsilon))))) + 
+  ggtitle(label = "Residuals vs. sqrt(abs(Fitted))") +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+grid.arrange(sw_diag1, sw_diag2, ncol = 2)
+
+```
+
+잔차와 추정치 사이의 관계를 산점도로 표현하여 검토한 결과 및 $\sqrt{|\hat{\epsilon}|}$과 추정치 간의 관계 모두에서 잔차가 매우 고르게 분포하고 있는 것으로 나타나는 바, 등분산성 및 선형성의 가정에 큰 문제가 없는 것으로 관측된다.
+
+
+```{r}
+
+summary(lm(abs(residuals(swiss_lm)) ~ fitted(swiss_lm)))
+summary(lm(sqrt(abs(residuals(swiss_lm))) ~ fitted(swiss_lm)))
+
+```
+
+잔차의 절대값 및 제곱근과 추정치 간의 관계를 분석한 결과에서도, p-value 가 높아 등분산성 가정을 기각할 수 없다.
+
+
+```{r}
+
+ncvTest(swiss_lm)
+
+```
+
+추가로 `car` 패키지의 `ncvTest` 함수를 통해서도 검토한 결과, p = 0.58 로 나타나는 바 등분산성 가정을 기각할 수 없으며, `swiss` 데이터에는 non-constant variance 이슈가 없는 것으로 판단된다.
+
+
+#### (b) Check the normality assumption.
+
+```{r}
+
+sw_diag3 <- ggplot(data = swiss_lm, aes(sample = .stdresid)) +
+  stat_qq() + stat_qq_line() +
+  xlab("Theoretical Quantiles") + ylab("Standardized Residuals") +
+  ggtitle(label = "Normal Q-Q") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+sw_diag4 <- ggplot(data = swiss_lm, aes(x = .resid)) +
+  geom_histogram(bins = 10, fill = "steelblue", colour = "black") +
+  xlab("Residuals") + ggtitle(label = "Histogram") + 
+  theme(plot.title = element_text(size = 15, hjust = 0.5, vjust = 1.5, face = "bold"))
+
+grid.arrange(sw_diag3, sw_diag4, ncol = 2)
+
+```
+
+정규성 검토를 위하여 Normal Q-Q plot을 검토한 결과, 거의 직선형태의 분포가 관측되었으며, 직선을 벗어나는 값은 거의 관측되지 않는다. 잔차의 히스토그램 또한 종 형태에 가까운 모양이 관측되며 정규성 가정을 잘 뒷받침하고 있는 것으로 보인다.
+
+
+```{r}
+
+shapiro.test(swiss_lm$residuals)
+
+```
+
+
+Shapiro-Wilk's Test 실시 결과 $p-value = 0.93 > 0.05$ 으로, 잔차의 정규성 가정(귀무가설)을 기각하지 못한다. 
+
+
+#### (c) Check for large leverage points.
+
+
+```{r}
+
+swiss_hatv <- hatvalues(swiss_lm)
+head(swiss_hatv)
+sum(swiss_hatv)
+
+```
+
+`hatvalues`를 통해 leverage를 `swiss_hatv`로 생성하였다. 일반적으로 large leverage는 $2p/n$인 지점을 나타내고, `p = sum(swiss_hatv)` 이므로, 간단히 large leverage point를 추려보면 다음과 같다.
+
+
+```{r}
+
+swiss_large <- 2 * sum(swiss_hatv) / length(swiss_lm$fitted.values)
+
+swiss %>% 
+  rownames_to_column() %>% rename(province = rowname) %>% 
+  mutate(hatv = hatvalues(swiss_lm)) %>% 
+  filter(hatv > swiss_large) %>% 
+  arrange(desc(hatv))
+
+```
+
+위의 2개 주가 large leverage points로 추정된다.
+
+
+```{r}
+
+swiss_provinces <- row.names(swiss)
+halfnorm(swiss_hatv, labs = swiss_provinces, ylab = "Leverages")
+abline(h = (2 * sum(swiss_hatv) / length(swiss_lm$fitted.values)), lty = 2)
+title(main = "Half-normal plot")
+
+```
+
+Half-normal plot을 통해 확인한 결과, V. De Geneve와 La Vallee가 Large leverage로 확인된다. 다만, 앞선 `sat` 데이터에서의 high leverage에 비했을 때 그 정도는 상대적으로 낮은 것으로 보인다.
+
+
+#### (d) Check for outliers.
+
+```{r}
+
+set.seed(123)
+swiss_stud <- rstudent(swiss_lm)
+
+length(swiss_lm$fitted.values)
+
+swiss_stud2 <- as.data.frame(swiss_stud) %>% 
+  rownames_to_column() %>% rename(province = rowname) %>% 
+  rename(stdresid = swiss_stud) 
+ 
+```
+
+Bonferroni correction을 통한 outlier 확인을 위해 스튜던트 잔차를 `swiss_stud2` 라는 데이터프레임으로 생성하였다.
+
+
+```{r}
+
+swiss_stud2 %>% arrange(stdresid) %>% head(3)
+swiss_stud2 %>% arrange(stdresid) %>% tail(3)
+
+#Bonferroni critical value
+swiss_bcv <- qt(0.05 / (47*2), 40)
+swiss_bcv
+
+swiss_stud2 %>% filter(abs(stdresid) > abs(swiss_bcv))
+
+```
+
+유의수준 0.05, 자유도 40 (47 - 변수 6 - 1 = 40) 기준으로 계산한 결과 에서 Bonferroni critical value = -3.53이며, 절대값을 통해 양측에서 outlier를 확인한 결과, 해당하는 outlier가 없음을 확인할 수 있다.
+
+
+#### (e) Check for influential points.
+
+```{r}
+
+swiss_cook <- cooks.distance(swiss_lm)
+
+par(mfrow = c(1, 2))
+halfnorm(swiss_cook, 3, labs = swiss_provinces, ylab="Cook’s distances")
+plot(swiss_lm, which = 5)
+
+```
+
+Influential point 는 잔차와 leverage가 모두 큰 관측치로, Cook's distance를 통해 확인할 수 있는 것처럼 Porrentruy가 가장 큰 Influential point로 확인되나, Cook's distance가 0.5 미만이다.
+
+모델 개선 여부 확인을 위하여 Porrentruy를 제외한 모형을 적합해보면 다음과 같다.
+
+
+```{r}
+
+swiss_noPor <- swiss %>% 
+  rownames_to_column() %>% rename(province = rowname) %>% 
+  filter(province != "Porrentruy")
+
+swiss_lm2 <- lm(Fertility ~ Agriculture + Examination + Education + 
+                  Catholic + Infant.Mortality, data = swiss_noPor)
+
+summary(swiss_lm2)
+
+(swiss_lm$coefficients - swiss_lm2$coefficients) / swiss_lm$coefficients
+
+```
+
+전체 모형의 결정계수는 0.74로 약간 증가하였고 p-value는 더욱 낮아졌다. 회귀계수의 유의성에는 큰 변화가 없었다. 다만, 회귀계수 값이 Agriculture, Examination, Infant.Mortality에서 20% 이상 감소한 것이 확인된다.
+
+```{r}
+
+swiss[row.names(swiss) == "Porrentruy",]
+
+```
+
+
+#### (f) Check the structure of the relationship between the predictors and the response.
+
+```{r}
+
+par(mfrow = c(3, 2))
+termplot(swiss_lm, partial.resid = TRUE)
+
+```
+
+`termplot` 함수를 통해 각 설명변수별로 종속변수와의 관계에 대한 partial residual plot을 작성하였다. `Examination`을 제외한 설명변수들이 모두 앞서 살펴본 바와 같이 관계에 영향력을 가지고 유의함을 확인할 수 있다.
+
+한편, `Catholic`의 경우 60을 기준으로 두개의 그룹으로 구분할 수 있는 것으로 보인다.
+
+```{r}
+
+# Catholic >= 60
+
+summary(lm(Fertility ~ Agriculture + Examination + Education + 
+             Catholic + Infant.Mortality, data = swiss, subset = (Catholic >= 60)))
+
+# Catholic < 60
+
+summary(lm(Fertility ~ Agriculture + Examination + Education + 
+             Catholic + Infant.Mortality, data = swiss, subset = (Catholic < 60)))
+
+```
+
+`Catholic == 60`을 기준으로 데이터를 분리하여 회귀모형을 적합, summary를 도출한 결과, `Catholic < 60`에서 모형의 설명력, 유의성이 크게 나타나는 반면, `Catholic >= 60`에서는 모형의 설명력, 유의성이 크게 떨어지는 것으로 나타난다. 
+
+```{r}
+
+swiss_cath <- swiss %>% 
+  mutate(group = ifelse(Catholic >= 60, "Catholic>=60", "Catholic<60"))
+
+ggplot(data = swiss_cath, aes(x = Education, y = Fertility)) +
+  geom_point() + facet_grid(~ group) + stat_smooth(method = "lm")
+
+```
+
+`Catholic == 60`을 기준으로 데이터를 분리하여 scatter plot을 작성한 결과에서도, `Catholic < 60` 에서 `Education`에 따른 `Fertility`의 변화가 강하게 나타나는 등, 그룹의 분류에 따른 차이를 확인할 수 있어 그룹별 분석을 수행하는 것도 모델을 개선하는 데 도움이 될 수 있을 것으로 판단된다.
 
