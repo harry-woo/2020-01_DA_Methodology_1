@@ -3,8 +3,8 @@ title: "Faraway_ch6"
 author: "Harry Woo"
 date: '2020 5 26 '
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 
