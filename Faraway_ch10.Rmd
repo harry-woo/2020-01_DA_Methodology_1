@@ -1,0 +1,111 @@
+---
+title: "Faraway_ch10"
+author: "Harry Woo"
+date: '2020 5 29 '
+output:
+  html_document: default
+  word_document: default
+---
+
+
+## Faraway Chapter 10 Variable Selection
+### Problem 1
+
+_Use the prostate data with lpsa as the response and the other variables as predictors. Implement the following variable selection methods to determine the "best" model:_
+
+
+```{r load packages, message=FALSE, warning=FALSE, include=TRUE}
+
+library(faraway)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(knitr)
+library(MASS)
+library(car)
+library(tibble)
+library(gridExtra)
+library(leaps)
+
+```
+
+### Data loading and EDA
+```{r}
+
+data("prostate")
+str(prostate)
+summary(prostate)
+
+ggpairs(prostate, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+```
+
+
+#### (a) AIC
+
+```{r}
+
+regsub <- regsubsets(lpsa ~ ., data = prostate)
+regsub_s <- summary(regsub)
+regsub_s$which
+
+```
+
+```{r}
+
+AIC <- 50 * log(regsub_s$rss / 50) + (2:9) * 2
+plot(AIC ~ I(1:8), ylab = "AIC", xlab = "No. of Predictors")
+
+```
+
+#### (b) Adjusted R2
+
+```{r}
+
+plot(2:9, regsub_s$adjr2, xlab = "No. of Parameters", ylab = "Adjusted R^2")
+which.max(regsub_s$adjr2)
+
+```
+
+#### (c) Mallows Cp
+
+```{r}
+
+
+
+```
+
+#### (d) forward selection method
+
+```{r}
+
+
+
+```
+
+#### (e) Stepwise Selection method
+
+```{r}
+
+
+
+```
+
+### Problem 2
+
+_Using the trees data, fit a model with log (Volume) as the response and a second-order polynomial (including the interaction term) in Girth and Height. Determine whether the model may be reasonably simplified._
+
+```{r}
+
+data(trees)
+trees
+
+```
+
