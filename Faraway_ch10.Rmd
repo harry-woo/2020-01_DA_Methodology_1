@@ -76,7 +76,7 @@ which.min(pst_AIC)
 
 ```
 
-`lpsa_rss` 자료를 기준으로, 설명변수의 조합에 따른 AIC 값을 계산하여 표로 나타낸 결과, 5개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`)를 사용했을 때 AIC 값이 최저임을 확인할 수 있다.
+Akaike Information Crieteria(AIC)를 변수선택 기준으로 활용할 때는 여러 모형 중 AIC가 가장 낮은 모형이 최적 모형으로 선택된다. `lpsa_rss` 자료를 기준으로, 설명변수의 조합에 따른 AIC 값을 계산하여 표로 나타낸 결과, 5개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`)를 사용했을 때 AIC 값이 최저임을 확인할 수 있다.
 
 
 
@@ -90,7 +90,7 @@ which.max(pst_rss$adjr2) #결과 7 -> 변수 7개 조합을 의미
 
 ```
 
-Adjusted R^2의 산식으로부터 Prediction의 표준오차를 최소화한다는 것은 수정된 결정계수를 최대화한다는 말로도 표현할 수 있다. `pst_rss`로부터 수정된 결정계수가 최대로 나타내는 변수의 조합을 찾아낸 결과, 7개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`, `lcp`, `gleason`, `pgg45`)를 선택했을 때 Adjusted R^2 값이 최대가 됨을 확인할 수 있다.
+모형을 선택함에 있어서 MSE를 최소화한다는 것은 곧 수정결정계수를 최대화하는 것과 동일한 기준을 갖는다고 할 수 있다. 이에 따라, `pst_rss`로부터 수정결정계수가 최대로 나타내는 모형을 찾아낸 결과, 7개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`, `lcp`, `gleason`, `pgg45`)를 선택했을 때 Adjusted R^2 값이 최대가 되는 최적모형임을 확인할 수 있다.
 
 
 #### (c) Mallows Cp
@@ -108,98 +108,90 @@ which.min(pst_rss$cp)
 
 ```
 
-모든 변수를 포함했을 때의 MSE를 기준으로 C_p 통계량을 계산할 수 있으며, 가급적 낮은 C_p 값이 더 선호되며 C_p가 parameter의 개수 p에 근사한 모델이 일반적으로 선택된다. 
+모든 변수를 포함했을 때의 full model을 기준으로, p개의 설명변수를 포함하는 모형의 fit을 검토하기 위해 MSE의 n개의 합을 이용하는 C_p 통계량을 활용할 수 있다. 가급적 낮은 C_p 값이 더 선호되며 C_p가 parameter의 개수 p에 근사한 모델이 일반적으로 선택된다. 
 
-Mallows C_p를 통해 검토한 결과, 변수 4개 모델과 변수 5개 모델 사이의 competition이 관찰된다. C_p가 p 이상인 모델에서 변수 4개 모델이 가장 낮은 C_p 값을 가지며, 변수 5개 모델은 C_p가 거의 p에 근사하다는 점에서 훌륭한 것으로 판단된다. 두 모델의 C_p 값에 큰 차이가 없어 변수 5개 모델을 winning model로 선택할 수 있을 것으로 판단된다.
+Mallows C_p를 통해 검토한 결과, 변수 4개 모델과 변수 5개 모델 사이의 competition이 관찰된다. C_p가 p 이상인 모델에서 변수 4개 모델(`lcavol`, `lweight`, `lbph`, `svi`)이 가장 낮은 C_p 값을 가지며, `age`가 추가된 변수 5개 모델(`lcavol`, `lweight`, `age`, `lbph`, `svi`)은 C_p가 p+1 보다 작고 거의 p에 근사하다는 점에서 두 모델 모두 최적모델로 고려할 수 있을 것으로 판단된다. 
 
 
 #### (d) Forward selection method
 
 ```{r}
 
-pst_forward <- lm(lpsa ~ 1, data = prostate)
-summary(pst_forward)
-
-pst_f1 <- data.frame(cbind(
-  "lcavol" = summary(update(pst_forward, . ~ . + lcavol))$coefficients["lcavol",4],
-  "lweight" = summary(update(pst_forward, . ~ . + lweight))$coefficients["lweight",4],
-  "age" = summary(update(pst_forward, . ~ . + age))$coefficients["age", 4],
-  "lbph" = summary(update(pst_forward, . ~ . + lbph))$coefficients["lbph", 4],
-  "svi" = summary(update(pst_forward, . ~ . + svi))$coefficients["svi", 4],
-  "lcp" = summary(update(pst_forward, . ~ . + lcp))$coefficients["lcp", 4],
-  "gleason" = summary(update(pst_forward, . ~ . + gleason))$coefficients["gleason", 4],
-  "pgg45" = summary(update(pst_forward, . ~ . + pgg45))$coefficients["pgg45", 4]))
-pst_f1[which.min(pst_f1)] # "lcavol" 선택
-pst_forward1 <- update(pst_forward, . ~ . + lcavol)
-summary(pst_forward1)
-
-pst_f2 <- data.frame(cbind(
-  "lweight" = summary(update(pst_forward1, . ~ . + lweight))$coefficients["lweight",4],
-  "age" = summary(update(pst_forward1, . ~ . + age))$coefficients["age", 4],
-  "lbph" = summary(update(pst_forward1, . ~ . + lbph))$coefficients["lbph", 4],
-  "svi" = summary(update(pst_forward1, . ~ . + svi))$coefficients["svi", 4],
-  "lcp" = summary(update(pst_forward1, . ~ . + lcp))$coefficients["lcp", 4],
-  "gleason" = summary(update(pst_forward1, . ~ . + gleason))$coefficients["gleason", 4],
-  "pgg45" = summary(update(pst_forward1, . ~ . + pgg45))$coefficients["pgg45", 4]))
-pst_f2[which.min(pst_f2)] # "lweight" 선택
-pst_forward2 <- update(pst_forward1, . ~ . + lweight)
-summary(pst_forward2)
-
-pst_f3 <- data.frame(cbind(
-  "age" = summary(update(pst_forward2, . ~ . + age))$coefficients["age", 4],
-  "lbph" = summary(update(pst_forward2, . ~ . + lbph))$coefficients["lbph", 4],
-  "svi" = summary(update(pst_forward2, . ~ . + svi))$coefficients["svi", 4],
-  "lcp" = summary(update(pst_forward2, . ~ . + lcp))$coefficients["lcp", 4],
-  "gleason" = summary(update(pst_forward2, . ~ . + gleason))$coefficients["gleason", 4],
-  "pgg45" = summary(update(pst_forward2, . ~ . + pgg45))$coefficients["pgg45", 4]))
-pst_f3[which.min(pst_f3)] # "svi" 선택
-pst_forward3 <- update(pst_forward2, . ~ . + svi)
-summary(pst_forward3)
-
-pst_f4 <- data.frame(cbind(
-  "age" = summary(update(pst_forward3, . ~ . + age))$coefficients["age", 4],
-  "lbph" = summary(update(pst_forward3, . ~ . + lbph))$coefficients["lbph", 4],
-  "lcp" = summary(update(pst_forward3, . ~ . + lcp))$coefficients["lcp", 4],
-  "gleason" = summary(update(pst_forward3, . ~ . + gleason))$coefficients["gleason", 4],
-  "pgg45" = summary(update(pst_forward3, . ~ . + pgg45))$coefficients["pgg45", 4]))
-pst_f4[which.min(pst_f4)] # "svi" 선택
-pst_forward4 <- update(pst_forward3, . ~ . + lbph)
-summary(pst_forward4)
-
-```
-
-
-```{r}
-
 #step 문을 활용한 전진 선택법
 
-head(prostate)
+pst_lm_null <- lm(lpsa ~ 1, data = prostate) #
 pst_lm_full <- lm(lpsa ~ ., data = prostate)
 
 step(pst_lm_null, scope = list(lower = pst_lm_null, upper = pst_lm_full),
-     direction = "forward")
+     data = prostate, direction = "forward")
 
 summary(lm(formula = lpsa ~ lcavol + lweight + svi + lbph + age, data = prostate))
 
 ```
 
+`step` 문을 활용한 전진선택법을 실시하였다. 절편만을 포함한 모형 `pst_lm_null`에서 시작하여, 설명변수를 하나씩 추가하였을 때 AIC 값이 가장 작은 설명변수를 선택하고, 검정결과가 유의할 때까지 설명변수를 추가한 결과,  5개의 변수(`lcavol`, `lweight`, `svi`, `lbph`, `age`)를 포함하는 모형이 최종 모델로 선택되었다.
+
 #### (e) Stepwise Selection method
 
 ```{r}
 
-step(pst_lm_null, scope = list(upper = pst_lm_full),
+step(pst_lm_null, scope = list(upper = pst_lm_full), data = prostate,
      direction = "both")
 
 ```
+
+`step` 문을 활용한 단계별(stepwise) 선택법을 실시하였다. 전진선택법에서와 같이 절편만을 포함한 모형 `pst_lm_null`에서 시작하여, 설명변수를 하나씩 추가하였을 때 AIC 값이 가장 작은 설명변수를 선택하되, 검정결과가 유의하지 않을 경우 해당 설명변수를 제거하고 다시 설명변수의 추가를 검토하는 과정을 반복한 결과, 5개의 변수(`lcavol`, `lweight`, `svi`, `lbph`, `age`)를 포함하는 모형이 최종 모델로 선택되었다.
 
 ### Problem 2
 
 _Using the trees data, fit a model with log (Volume) as the response and a second-order polynomial (including the interaction term) in Girth and Height. Determine whether the model may be reasonably simplified._
 
+### Data loading and EDA
 ```{r}
 
-data(trees)
-trees
+data("trees")
+str(trees)
+summary(trees)
+
+trees %>% mutate(lVolume = log(Volume)) %>% dplyr::select(Girth, Height, lVolume) %>% 
+  ggpairs(., 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
 
 ```
 
+```{r}
+
+trees_lm <- lm(log(Volume) ~ Girth + Height + I(Girth^2) + I(Height^2) + Girth:Height, data=trees)
+summary(trees_lm)
+
+```
+
+문제에서 주어진 내용대로 `log(Volume)`을 종속변수로, `Girth`와 `Height` 및 2차식, 교호작용까지 고려한 회귀모형을 `trees_lm`으로 적합하였다. 적합 결과, 결정계수는 0.9784로 매우 높으나 설명변수 중 `Girth` 하나만이 유의수준 0.05에서 유의한 것으로 나타나 좋은 모델이라고 할 수 없다.
+
+이에, 후진제거법을 활용하여 모델을 개선, 단순화해보았다.
+
+
+```{r}
+
+step(trees_lm, data = trees, direction = "backward")
+summary(lm(formula = log(Volume) ~ Girth + Height + I(Girth^2), data = trees))
+
+```
+
+후진제거법을 통해 AIC 값을 최소화한 결과, `Height^2` 및 두 설명변수의 교호작용 항이 제거되었다. 
+
+```{r}
+
+trees_final <- lm(formula = log(Volume) ~ Girth + Height + I(Girth^2), data = trees)
+summary(trees_final)
+anova(trees_lm, trees_final)
+
+```
+
+최종 모델 `trees_final`의 summary 확인 결과, 3개 변수(`Girth`, `Height`, `Girth^2`)가 모두 유의하며 결정계수 또한 큰 차이가 없는 것으로 나타났다. anova 결과에서도 p-value가 0.05 이상으로 귀무가설을 기각할 수 없는 바, 최종 모델 `trees_final`이 기존 모형보다 더 개선, 단순화되었음을 확인할 수 있다.
