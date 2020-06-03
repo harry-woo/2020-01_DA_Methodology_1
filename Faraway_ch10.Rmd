@@ -48,39 +48,62 @@ ggpairs(prostate,
 ```
 
 
+#### Criterion-based procedures
+
 #### (a) AIC
 
 ```{r}
 
-regsub <- regsubsets(lpsa ~ ., data = prostate)
-regsub_s <- summary(regsub)
-regsub_s$which
+pst_rs <- regsubsets(lpsa ~ ., data = prostate)
+pst_rss <- summary(pst_rs)
+pst_rss$which
 
 ```
+
+`leaps` 패키지의 `regsubsets` 문을 활용하여 설명변수들의 모든 가능한 조합을 검토하여 주어진 모델 크기에서 최적의 RSS를 갖는 변수들을 찾아내어, 이를 `pst_rss`로 저장하였다.
+
 
 ```{r}
 
-AIC <- 50 * log(regsub_s$rss / 50) + (2:9) * 2
-plot(AIC ~ I(1:8), ylab = "AIC", xlab = "No. of Predictors")
+#linear regression 에서 -2 max log-likelihood는 nlog(RSS/n) + 2p(penalty term)
+
+pst_n <- nrow(prostate)
+pst_AIC <- pst_n * log(pst_rss$rss / pst_n) + (2:9) * 2
+plot(pst_AIC ~ I(1:8), ylab = "AIC", xlab = "No. of Predictors")
+which.min(pst_AIC)
+
 
 ```
+
+`lpsa_rss` 자료를 기준으로, 설명변수의 조합에 따른 AIC 값을 계산하여 표로 나타낸 결과, 5개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`)를 사용했을 때 AIC 값이 최저임을 확인할 수 있다.
+
+
 
 #### (b) Adjusted R2
 
 ```{r}
 
-plot(2:9, regsub_s$adjr2, xlab = "No. of Parameters", ylab = "Adjusted R^2")
-which.max(regsub_s$adjr2)
+plot(2:9, pst_rss$adjr2, xlab = "No. of Parameters", ylab = "Adjusted R^2")
+which.max(pst_rss$adjr2)
 
 ```
+
+Adjusted R^2의 산식으로부터 Prediction의 표준오차를 최소화한다는 것은 수정된 결정계수를 최대화한다는 말로도 표현할 수 있다. `pst_rss`로부터 수정된 결정계수가 최대로 나타내는 변수의 조합을 찾아낸 결과, 7개의 변수(`lcavol`, `lweight`, `age`, `lbph`, `svi`, `lcp`, `gleason`, `pgg45`)를 선택했을 때 Adjusted R^2 값이 최대가 됨을 확인할 수 있다.
+
 
 #### (c) Mallows Cp
 
 ```{r}
 
+# C_p = RSS_p / var_hat + 2p - n
 
+plot(2:9, pst_rss$cp, xlab = "No. of Parameters", ylab = "C_p Statistics")
+abline(0, 1)
 
 ```
+
+평균 MSE가 
+
 
 #### (d) forward selection method
 
