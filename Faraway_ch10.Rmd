@@ -70,6 +70,7 @@ pst_rss$which
 pst_n <- nrow(prostate)
 pst_AIC <- pst_n * log(pst_rss$rss / pst_n) + (2:9) * 2
 plot(pst_AIC ~ I(1:8), ylab = "AIC", xlab = "No. of Predictors")
+text(1:8, pst_AIC + 1, labels = round(pst_AIC, 2), col = "blue", cex= 1)
 which.min(pst_AIC)
 
 
@@ -84,7 +85,8 @@ which.min(pst_AIC)
 ```{r}
 
 plot(2:9, pst_rss$adjr2, xlab = "No. of Parameters", ylab = "Adjusted R^2")
-which.max(pst_rss$adjr2)
+text(2:9, pst_rss$adjr2 - 0.005, labels = round(pst_rss$adjr2, 3), col = "blue", cex= 1)
+which.max(pst_rss$adjr2) #결과 7 -> 변수 7개 조합을 의미
 
 ```
 
@@ -95,21 +97,89 @@ Adjusted R^2의 산식으로부터 Prediction의 표준오차를 최소화한다
 
 ```{r}
 
-# C_p = RSS_p / var_hat + 2p - n
+# C_p = SSE_p / MSE + 2p - n
 
 plot(2:9, pst_rss$cp, xlab = "No. of Parameters", ylab = "C_p Statistics")
 abline(0, 1)
+text(2:9, pst_rss$cp + 1, labels = round(pst_rss$cp, 2), col = "blue", cex= 1)
+
+pst_rss$cp
+which.min(pst_rss$cp)
 
 ```
 
-평균 MSE가 
+모든 변수를 포함했을 때의 MSE를 기준으로 C_p 통계량을 계산할 수 있으며, 가급적 낮은 C_p 값이 더 선호되며 C_p가 parameter의 개수 p에 근사한 모델이 일반적으로 선택된다. 
+
+Mallows C_p를 통해 검토한 결과, 변수 4개 모델과 변수 5개 모델 사이의 competition이 관찰된다. C_p가 p 이상인 모델에서 변수 4개 모델이 가장 낮은 C_p 값을 가지며, 변수 5개 모델은 C_p가 거의 p에 근사하다는 점에서 훌륭한 것으로 판단된다. 두 모델의 C_p 값에 큰 차이가 없어 변수 5개 모델을 winning model로 선택할 수 있을 것으로 판단된다.
 
 
-#### (d) forward selection method
+#### (d) Forward selection method
 
 ```{r}
 
+pst_forward <- lm(lpsa ~ 1, data = prostate)
+summary(pst_forward)
 
+pst_f1 <- data.frame(cbind(
+  "lcavol" = summary(update(pst_forward, . ~ . + lcavol))$coefficients["lcavol",4],
+  "lweight" = summary(update(pst_forward, . ~ . + lweight))$coefficients["lweight",4],
+  "age" = summary(update(pst_forward, . ~ . + age))$coefficients["age", 4],
+  "lbph" = summary(update(pst_forward, . ~ . + lbph))$coefficients["lbph", 4],
+  "svi" = summary(update(pst_forward, . ~ . + svi))$coefficients["svi", 4],
+  "lcp" = summary(update(pst_forward, . ~ . + lcp))$coefficients["lcp", 4],
+  "gleason" = summary(update(pst_forward, . ~ . + gleason))$coefficients["gleason", 4],
+  "pgg45" = summary(update(pst_forward, . ~ . + pgg45))$coefficients["pgg45", 4]))
+pst_f1[which.min(pst_f1)] # "lcavol" 선택
+pst_forward1 <- update(pst_forward, . ~ . + lcavol)
+summary(pst_forward1)
+
+pst_f2 <- data.frame(cbind(
+  "lweight" = summary(update(pst_forward1, . ~ . + lweight))$coefficients["lweight",4],
+  "age" = summary(update(pst_forward1, . ~ . + age))$coefficients["age", 4],
+  "lbph" = summary(update(pst_forward1, . ~ . + lbph))$coefficients["lbph", 4],
+  "svi" = summary(update(pst_forward1, . ~ . + svi))$coefficients["svi", 4],
+  "lcp" = summary(update(pst_forward1, . ~ . + lcp))$coefficients["lcp", 4],
+  "gleason" = summary(update(pst_forward1, . ~ . + gleason))$coefficients["gleason", 4],
+  "pgg45" = summary(update(pst_forward1, . ~ . + pgg45))$coefficients["pgg45", 4]))
+pst_f2[which.min(pst_f2)] # "lweight" 선택
+pst_forward2 <- update(pst_forward1, . ~ . + lweight)
+summary(pst_forward2)
+
+pst_f3 <- data.frame(cbind(
+  "age" = summary(update(pst_forward2, . ~ . + age))$coefficients["age", 4],
+  "lbph" = summary(update(pst_forward2, . ~ . + lbph))$coefficients["lbph", 4],
+  "svi" = summary(update(pst_forward2, . ~ . + svi))$coefficients["svi", 4],
+  "lcp" = summary(update(pst_forward2, . ~ . + lcp))$coefficients["lcp", 4],
+  "gleason" = summary(update(pst_forward2, . ~ . + gleason))$coefficients["gleason", 4],
+  "pgg45" = summary(update(pst_forward2, . ~ . + pgg45))$coefficients["pgg45", 4]))
+pst_f3[which.min(pst_f3)] # "svi" 선택
+pst_forward3 <- update(pst_forward2, . ~ . + svi)
+summary(pst_forward3)
+
+pst_f4 <- data.frame(cbind(
+  "age" = summary(update(pst_forward3, . ~ . + age))$coefficients["age", 4],
+  "lbph" = summary(update(pst_forward3, . ~ . + lbph))$coefficients["lbph", 4],
+  "lcp" = summary(update(pst_forward3, . ~ . + lcp))$coefficients["lcp", 4],
+  "gleason" = summary(update(pst_forward3, . ~ . + gleason))$coefficients["gleason", 4],
+  "pgg45" = summary(update(pst_forward3, . ~ . + pgg45))$coefficients["pgg45", 4]))
+pst_f4[which.min(pst_f4)] # "svi" 선택
+pst_forward4 <- update(pst_forward3, . ~ . + lbph)
+summary(pst_forward4)
+
+```
+
+
+```{r}
+
+#step 문을 활용한 전진 선택법
+
+head(prostate)
+pst_lm_full <- lm(lpsa ~ ., data = prostate)
+
+step(pst_lm_null, scope = list(lower = pst_lm_null, upper = pst_lm_full),
+     direction = "forward")
+
+summary(lm(formula = lpsa ~ lcavol + lweight + svi + lbph + age, data = prostate))
 
 ```
 
@@ -117,7 +187,8 @@ abline(0, 1)
 
 ```{r}
 
-
+step(pst_lm_null, scope = list(upper = pst_lm_full),
+     direction = "both")
 
 ```
 
