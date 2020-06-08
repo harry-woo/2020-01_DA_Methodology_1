@@ -20,6 +20,8 @@ _Chapter 12 Chicago Insurance Redlining- a complete example in Faraway-PRA 의 �
 https://socialsciences.mcmaster.ca/jfox/Courses/SPIDA/
 https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab2/lab2.html
 https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab3/lab3.html
+https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab4/lab4.html
+http://www.jpstats.org/Regression/ch_05_05.html
 
 _After exploring the data graphically, perform a linear least‐squares regression of the total fertility rate (`tfr`) on GDP per capita (`GDPperCapita`), the female illiteracy rate (`illiteracyFemale`), and the rate of contraceptive use by married women (`contraception`)._
 
