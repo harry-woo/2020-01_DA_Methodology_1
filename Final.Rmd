@@ -9,6 +9,38 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Problem 1
 
+_Chapter 12 Chicago Insurance Redlining- a complete example in Faraway-PRA 의 주요 기본 분석 처리를 Rstudio의 rmarkdown 을 이용하여 html(또는 pdf) 요약보고서로 간단히 정리하여 제출하기_
+
+
+
+### Problem 2
 https://socialsciences.mcmaster.ca/jfox/Courses/SPIDA/
+
+_After exploring the data graphically, perform a linear least‐squares regression of the total fertility rate (`tfr`) on GDP per capita (`GDPperCapita`), the female illiteracy rate (`illiteracyFemale`), and the rate of contraceptive use by married women (`contraception`)._
+
+_Introduce the factor region into the regression, first fitting an additive model to the data and then considering the possibility that region interacts with the other explanatory variables._
+
+#### 2.0 Data loading
+
+UN <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header = TRUE)
+
+#### 2.1 Exploring the data graphically
+
+#### 2.2 Linear least-squares regression
+
+#### 2.3 Introducing the factor region
+
+##### 2.3.1 Fitting and additive model
+
+##### 2.3.2 Considering the possibility that region interacts with the other
+
+
+
+### Problem 3
+
+_Using the Canadian occupational prestige data (the Prestige data frame in the car package – see ?Prestige), replicate the linear regression of prestige on education, income, and women (i.e., percent women in the occupation)._
+
+_Use “regression diagnostics” to check for problems in this regression and attempt to correct any problems that you discover._
 
