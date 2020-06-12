@@ -25,15 +25,40 @@ _Introduce the factor `region` into the regression, first fitting an additive mo
 
 ```{r}
 
-UN <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header = TRUE)
+un <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header = TRUE)
+
+str(un)
+summary(un)
 
 ```
+```{r}
+
+# NA 처리, 변수 선택
+un2 <- na.omit(un[,c("tfr", "GDPperCapita", "illiteracyFemale", "contraception", "region")]) 
+
+```
+
 
 #### 2.1 Exploring the data graphically
 
 ```{r}
 
+head(un2)
 
+ggpairs(un2, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                     continuous = wrap("cor", size = 4,alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+# by region
+ggpairs(un2[,1:4], aes(colour = un2$region),
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                     continuous = wrap("cor", size = 4,alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
 
 ```
 
@@ -42,41 +67,14 @@ UN <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regressio
 
 ```{r}
 
-
+un_lm <- lm(tfr ~ GDPperCapita + illiteracyFemale + contraception, data = un2) 
+summary(un_lm) 
 
 ```
 
-#### 2.3 Introducing the factor `region`
+##### Diagnostic
 
 ```{r}
-
-
-
-```
-
-##### 2.3.1 Fitting and additive model
-
-```{r}
-
-
-
-```
-
-##### 2.3.2 Considering the possibility that region interacts with the other
-
-```{r}
-
-
-
-```
-
-solution by Fox
-
-UN <- read.table("http://socserv.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header=TRUE) 
-UN <- na.omit(UN[,c("tfr", "GDPperCapita", "illiteracyFemale", "contraception", "region")]) 
-
-mod1 <- lm(tfr ~ GDPperCapita + illiteracyFemale + contraception, data=UN) 
-summary(mod1) 
 
 library(car) 
 qq.plot(mod1) 
@@ -87,7 +85,17 @@ identify(rep(1, length(rstud)), rstud, names(rstud))
 influencePlot(mod1) 
 av.plots(mod1, ask=FALSE) 
 cr.plots(mod1, ask=FALSE) 
-mod2 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception, data=UN) summary(mod2) 
+
+```
+
+
+##### Log transformation
+
+```{r}
+
+un_lm2 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception, data = un2) 
+summary(un_lm2) 
+
 cr.plots(mod2, ask=FALSE) 
 qq.plot(mod2) 
 rstud <- rstudent(mod2) 
@@ -96,8 +104,19 @@ boxplot(rstud)
 identify(rep(1, length(rstud)), rstud, names(rstud)) 
 influencePlot(mod2) 
 av.plots(mod2, ask=FALSE) 
-mod3 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception + region, data=UN) 
-summary(mod3) 
+
+```
+
+
+#### 2.3 Introducing the factor `region`
+
+##### 2.3.1 Fitting and additive model
+
+```{r}
+
+un_lm3 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception + region, data = un2) 
+summary(un_lm3) 
+
 Anova(mod3) 
 cr.plots(mod3, ask=FALSE) 
 influencePlot(mod3) 
@@ -106,12 +125,28 @@ rstud <- rstudent(mod3)
 plot(density(rstud)) 
 boxplot(rstudent(mod3)) 
 identify(rep(1, length(rstud)), rstud, names(rstud)) 
-mod4 <- lm(tfr ~ (log(GDPperCapita) + logit(illiteracyFemale) + contraception)*region, data=UN) 
+
+```
+
+##### 2.3.2 Considering the possibility that region interacts with the other
+
+```{r}
+
+un_lm4 <- lm(tfr ~ (log(GDPperCapita) + log(illiteracyFemale) + contraception)*region, data = un2) 
+summary(un_lm4)
+
 Anova(mod4) 
-mod5 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception*region, data=UN) 
+
+un_lm5 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception*region, data = un2) 
+summary(un_lm5)
+
 Anova(mod5) 
+
 library(effects) 
-plot(allEffects(mod5, default.levels=100), ask=FALSE) 
+plot(allEffects(un_lm5, default.levels=100), ask=FALSE)
+
+
+```
 
 
 ### Problem 3
@@ -120,30 +155,94 @@ _Using the Canadian occupational prestige data (the Prestige data frame in the c
 
 _Use “regression diagnostics” to check for problems in this regression and attempt to correct any problems that you discover._
 
-```{r}
+```{r include=FALSE}
 
 library(car)
-data("Prestige")
-
-head(Prestige)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(ggfortify)
 
 ```
 
-solution by Fox
 
-library(car) 
-modp1 <- lm(prestige ~ income + education + women, data=Prestige) 
-summary(modp1) 
-qq.plot(modp1, simulate=TRUE, line="none") 
-rstud <- rstudent(modp1) 
+#### Data Loading and EDA
+
+```{r}
+
+data("Prestige")
+summary(Prestige)
+str(Prestige)
+
+pt <- Prestige %>% select("prestige", "education", "income", "women") 
+
+ggpairs(pt, lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                     continuous = wrap("cor", size = 4,alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
+
+```
+
+
+`prestige`와 `education`, `income` 사이에 강한 선형 관계가 관측된다.
+데이터의 분포 형태 및 multicaptive? 특성을 감안하여 `income`은 log transformation이 필요할 것으로 추측되며,
+`women`은 `income`과 음의 상관관계가 있는 것으로 보인다.
+
+
+#### Model Fitting
+
+_linear regression of prestige on education, income, and women_
+
+```{r}
+
+pt_lm <- lm(prestige ~ income + education + women, data = pt) 
+summary(pt_lm)
+
+```
+
+문제에서 주어진 대로, `prestige`를 종속변수로, `income`, `education`, `women`을 설명변수로 회귀모형을 적합하였다. summary 확인 결과, `income`과 `education`은 유의수준 0.05에서 통계적으로 유의하며, F 통계량의 p-value는 매우 유의, 결정계수는 79.8% 수준으로 양호한 것으로 나타났다.
+
+
+#### Diagnostic
+
+```{r}
+
+autoplot(pt_lm, which = c(1:6))
+
+qqPlot(pt_lm, simulate=TRUE, line="none") 
+
+rstud <- rstudent(pt_lm) 
 plot(density(rstud)) 
 boxplot(rstud) 
-influencePlot(modp1) 
-av.plots(modp1, ask=FALSE)
-cr.plots(modp1, ask=FALSE) 
-modp2 <- lm(prestige ~ log10(income) + education + poly(women, 2), data=Prestige) 
-summary(modp2) 
-Anova(modp2) 
-influencePlot(modp2) 
-cr.plots(modp2, ask=FALSE) 
 
+influencePlot(pt_lm) 
+avPlots(pt_lm, ask=FALSE)
+crPlots(pt_lm, ask=FALSE) 
+
+```
+
+모형의 진단을 위하여,
+
+
+
+
+#### Correction
+
+```{r}
+
+pt_lm2 <- lm(prestige ~ log(income) + education + women, data = pt) 
+summary(pt_lm2) 
+
+pt_lm3 <- lm(prestige ~ log(income) + education + poly(women, 2), data = pt) 
+summary(pt_lm3) 
+
+anova(pt_lm, pt_lm2, pt_lm3) 
+
+influencePlot(pt_lm3) 
+crPlots(pt_lm3, ask=FALSE) 
+
+```
+
+
+진단결과를 반영하여 모형을 다음과 같이 개선하였다. 
