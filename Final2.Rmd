@@ -1,0 +1,149 @@
+---
+title: "Final2"
+author: "Harry Woo"
+date: '2020 6 12 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Problem 2
+
+https://socialsciences.mcmaster.ca/jfox/Courses/SPIDA/
+https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab2/lab2.html
+https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab3/lab3.html
+https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab4/lab4.html
+http://www.jpstats.org/Regression/ch_05_05.html
+
+_After exploring the data graphically, perform a linear least‐squares regression of the total fertility rate (`tfr`) on GDP per capita (`GDPperCapita`), the female illiteracy rate (`illiteracyFemale`), and the rate of contraceptive use by married women (`contraception`)._
+
+_Introduce the factor `region` into the regression, first fitting an additive model to the data and then considering the possibility that region interacts with the other explanatory variables._
+
+#### 2.0 Data loading
+
+```{r}
+
+UN <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header = TRUE)
+
+```
+
+#### 2.1 Exploring the data graphically
+
+```{r}
+
+
+
+```
+
+
+#### 2.2 Linear least-squares regression
+
+```{r}
+
+
+
+```
+
+#### 2.3 Introducing the factor `region`
+
+```{r}
+
+
+
+```
+
+##### 2.3.1 Fitting and additive model
+
+```{r}
+
+
+
+```
+
+##### 2.3.2 Considering the possibility that region interacts with the other
+
+```{r}
+
+
+
+```
+
+solution by Fox
+
+UN <- read.table("http://socserv.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header=TRUE) 
+UN <- na.omit(UN[,c("tfr", "GDPperCapita", "illiteracyFemale", "contraception", "region")]) 
+
+mod1 <- lm(tfr ~ GDPperCapita + illiteracyFemale + contraception, data=UN) 
+summary(mod1) 
+
+library(car) 
+qq.plot(mod1) 
+rstud <- rstudent(mod1) 
+plot(density(rstud)) 
+boxplot(rstud) 
+identify(rep(1, length(rstud)), rstud, names(rstud)) 
+influencePlot(mod1) 
+av.plots(mod1, ask=FALSE) 
+cr.plots(mod1, ask=FALSE) 
+mod2 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception, data=UN) summary(mod2) 
+cr.plots(mod2, ask=FALSE) 
+qq.plot(mod2) 
+rstud <- rstudent(mod2) 
+plot(density(rstud)) 
+boxplot(rstud) 
+identify(rep(1, length(rstud)), rstud, names(rstud)) 
+influencePlot(mod2) 
+av.plots(mod2, ask=FALSE) 
+mod3 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception + region, data=UN) 
+summary(mod3) 
+Anova(mod3) 
+cr.plots(mod3, ask=FALSE) 
+influencePlot(mod3) 
+qq.plot(mod3) 
+rstud <- rstudent(mod3) 
+plot(density(rstud)) 
+boxplot(rstudent(mod3)) 
+identify(rep(1, length(rstud)), rstud, names(rstud)) 
+mod4 <- lm(tfr ~ (log(GDPperCapita) + logit(illiteracyFemale) + contraception)*region, data=UN) 
+Anova(mod4) 
+mod5 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception*region, data=UN) 
+Anova(mod5) 
+library(effects) 
+plot(allEffects(mod5, default.levels=100), ask=FALSE) 
+
+
+### Problem 3
+
+_Using the Canadian occupational prestige data (the Prestige data frame in the car package – see ?Prestige), replicate the linear regression of prestige on education, income, and women (i.e., percent women in the occupation)._
+
+_Use “regression diagnostics” to check for problems in this regression and attempt to correct any problems that you discover._
+
+```{r}
+
+library(car)
+data("Prestige")
+
+head(Prestige)
+
+```
+
+solution by Fox
+
+library(car) 
+modp1 <- lm(prestige ~ income + education + women, data=Prestige) 
+summary(modp1) 
+qq.plot(modp1, simulate=TRUE, line="none") 
+rstud <- rstudent(modp1) 
+plot(density(rstud)) 
+boxplot(rstud) 
+influencePlot(modp1) 
+av.plots(modp1, ask=FALSE)
+cr.plots(modp1, ask=FALSE) 
+modp2 <- lm(prestige ~ log10(income) + education + poly(women, 2), data=Prestige) 
+summary(modp2) 
+Anova(modp2) 
+influencePlot(modp2) 
+cr.plots(modp2, ask=FALSE) 
+

@@ -13,143 +13,226 @@ knitr::opts_chunk$set(echo = TRUE)
 
 _Chapter 12 Chicago Insurance Redlining- a complete example in Faraway-PRA 의 주요 기본 분석 처리를 Rstudio의 rmarkdown 을 이용하여 html(또는 pdf) 요약보고서로 간단히 정리하여 제출하기_
 
+```{r include=FALSE}
 
+rm(list=ls())
 
-### Problem 2
-
-https://socialsciences.mcmaster.ca/jfox/Courses/SPIDA/
-https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab2/lab2.html
-https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab3/lab3.html
-https://sms.wgtn.ac.nz/foswiki/pub/Courses/DATA303_2020T1/Lab4/lab4.html
-http://www.jpstats.org/Regression/ch_05_05.html
-
-_After exploring the data graphically, perform a linear least‐squares regression of the total fertility rate (`tfr`) on GDP per capita (`GDPperCapita`), the female illiteracy rate (`illiteracyFemale`), and the rate of contraceptive use by married women (`contraception`)._
-
-_Introduce the factor `region` into the regression, first fitting an additive model to the data and then considering the possibility that region interacts with the other explanatory variables._
-
-#### 2.0 Data loading
-
-```{r}
-
-UN <- read.table("http://socialsciences.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header = TRUE)
+library(faraway)
+library(ggplot2)
+library(gridExtra)
+library(GGally)
+# install.packages("reshape2")
+library(reshape2)
+library(ggfortify)
+library(knitr)
+library(dplyr)
+# install.packages("kableExtra")
+library(kableExtra)
+library(leaps)
 
 ```
 
-#### 2.1 Exploring the data graphically
+```{r}
+
+data(eco)
+summary(eco)
+str(eco)
+
+plot1 <- ggplot(data = eco, aes(x= usborn, y = income)) +
+  geom_point() + xlab("Proportion US born") + ylab("Mean Annual Income") + 
+  theme_bw()
+
+eco_lm <- lm(income ~ usborn, data = eco)
+summary(eco_lm)
+
+plot2 <- plot1 +
+  geom_abline(slope = eco_lm$coef[2], intercept = eco_lm$coef[1], col = "blue") +
+  coord_cartesian(xlim = c(0, 1), ylim = c(15000, 70000)) 
+
+grid.arrange(plot1, plot2, ncol = 2)
+
+```
+
+usborn이 통계적으로 유의하고, negative 관계 확인 가능
+
+적합된 회귀식이 $income = -46019 * usborn + 68642$ 이므로, `usborn`인 경우 `income`이 더 낮아
+US Bureau of the Census 의 자료와 다른 결과
+the results for the aggregated data may not hold true at the individual level.
 
 ```{r}
 
+data(chicago)
+summary(chicago)
+str(chicago)
 
+# volact 제거 및 income scale 조정
+chicago2 <- data.frame(chicago[,1:4], involact = chicago[,6], 
+                       income = chicago[,7]/1000)
+
+summary(chicago2)
+
+```
+
+a wide range in the `race`, racial composition in percent minority, reduce the variation in the regression coefficient for race, allowing us to assess this effect more accurately.
+skewness in the `theft` and `income` variables
+`involact` has a large number of zeroes 
+`involact` : new FAIR plan policies and renewals per 100 housing units. measure of insurance availability in the voluntary market.
+
+```{r}
+
+# multiple histogram using reshape2 package
+ggplot(data = melt(chicago2), aes(x = value, fill = variable)) + 
+  geom_histogram(stat = "bin", bins = 7) + facet_wrap(~ variable, scale = "free") +
+  theme(legend.position = "none")
+
+# multiple boxplot using reshape2 package
+ggplot(data = melt(chicago2), aes(x = variable, y = value)) + 
+  geom_boxplot(aes(fill = variable)) + facet_wrap(~variable, scale="free") +
+  theme(legend.position = "none")
+
+# pairs
+ggpairs(chicago2, 
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
+        diag = list(discrete="barDiag", 
+                    continuous = wrap("densityDiag", alpha = 0.5 )),
+        upper = list(combo = wrap("box_no_facet", alpha = 0.5),
+                            continuous = wrap("cor", size = 4,
+                                              alignPercent = 0.8))) +
+  theme(legend.position = "bottom")
 
 ```
 
 
-#### 2.2 Linear least-squares regression
+```{r}
+
+summary(lm(involact ~ race, data = chicago2))
+
+```
+high % minority are being denied insurance at higher rate than other zip codes.
+다른 변수는 어떤가?
 
 ```{r}
 
+ch_lm <- lm(involact ~ race + fire + theft + age + log(income), data = chicago2)
+summary(ch_lm)
+
+autoplot(ch_lm, which = c(1, 2, 4, 6))
+
+par(mfrow = c(1,2))
+qqnorml(rstudent(ch_lm), main = "Jacknife Residuals")
+halfnorm(cooks.distance(ch_lm), main = "Cook-Statistics")
+par(mfrow = c(1,1))
+
+qt(0.05/(2*47),47-6-1)
+
+par(mfrow = c(2, 3))
+prplot(ch_lm, 1)
+prplot(ch_lm, 2)
+prplot(ch_lm, 3)
+prplot(ch_lm, 4)
+prplot(ch_lm, 5)
+
+```
+
+튀는 데이터로 60610, 60607, 나아가 60621이 확인된다.
+
+
+```{r}
+
+# 해당 데이터 확인
+
+kable(subset(chicago2, row.names(chicago2) %in% c(60610, 60607))) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+60610, 60607 은 `fire`, `theft`가 높은 데이터
+
+
+```{r}
+
+# 해당 데이터 제거
+
+chicago3 <- subset(chicago2, !(row.names(chicago2) %in% c(60610, 60607)))
+
+ch_lm2 <- lm(involact ~ race + fire + theft + age + log(income), 
+            data = chicago3)
+summary(ch_lm2)
 
 
 ```
 
-#### 2.3 Introducing the factor `region`
+theft and age are no longer significant at the 5% level.
+
+#### transformation
+
+because the response has some zero values and for interpretational reasons we will not try to
+transform it. Similarly, since the race variable is the primary predictor of interest we won’t try transforming it either so as to avoid interpretation difficulties
+
+polynomial model with quadratic terms
 
 ```{r}
 
+ch_lm3 <- lm(involact ~ race + poly(fire,2) + poly(theft,2) + poly(age,2) + poly(log(income),2),
+             data = chicago3)
+anova(ch_lm2, ch_lm3)
+
+```
+we can do without the quadratic terms. A check of the partial residual plots also reveals no
+need to transform
+
+#### Variable Selection
+
+we are mostly interested in the dependency of involact on the race variable.
+The problem is that collinearity with the other variables
+
+```{r}
+
+y <- chicago3$involact
+x <- cbind(chicago3[,1:4],linc = log(chicago3[,6]))
+a <- leaps(x, y)
+Cpplot(a)
 
 
 ```
 
-##### 2.3.1 Fitting and additive model
+Cp 값 기준으로 변수선택 시, 1234 가 최적으로 판단됨.
 
 ```{r}
 
+ch_lm4 <- lm(involact ~ race + fire + theft + age, data = chicago3)
+summary(ch_lm4)
 
+```
+we have verified that there is a positive relationship between involact and race while controlling for a selection of the other variables.
+
+#### Alternative Models
+```{r}
+
+summary(lm(involact ~ race + fire + log(income), data = chicago3))
+summary(lm(involact ~ race + fire, data = chicago3))
 
 ```
 
-##### 2.3.2 Considering the possibility that region interacts with the other
+
+#### Diagnostics for Final Model
+```{r}
+
+autoplot(ch_lm4, which = c(1, 2, 4, 6))
+
+```
+모형진단 결과 큰 문제는 없는 것으로 보인다.
+
+
+So it looks like there is some good evidence that zip codes with high minority populations are being “redlined” - that is improperly denied insurance. While there is evidence that some of the relationship between race and involact can be explained by the fire rate, there is still a component that cannot be attributed to the other variables.
+
 
 ```{r}
 
-
-
-```
-
-solution by Fox
-
-UN <- read.table("http://socserv.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt", header=TRUE) 
-UN <- na.omit(UN[,c("tfr", "GDPperCapita", "illiteracyFemale", "contraception", "region")]) 
-
-mod1 <- lm(tfr ~ GDPperCapita + illiteracyFemale + contraception, data=UN) 
-summary(mod1) 
-
-library(car) 
-qq.plot(mod1) 
-rstud <- rstudent(mod1) 
-plot(density(rstud)) 
-boxplot(rstud) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
-influencePlot(mod1) 
-av.plots(mod1, ask=FALSE) 
-cr.plots(mod1, ask=FALSE) 
-mod2 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception, data=UN) summary(mod2) 
-cr.plots(mod2, ask=FALSE) 
-qq.plot(mod2) 
-rstud <- rstudent(mod2) 
-plot(density(rstud)) 
-boxplot(rstud) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
-influencePlot(mod2) 
-av.plots(mod2, ask=FALSE) 
-mod3 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception + region, data=UN) 
-summary(mod3) 
-Anova(mod3) 
-cr.plots(mod3, ask=FALSE) 
-influencePlot(mod3) 
-qq.plot(mod3) 
-rstud <- rstudent(mod3) 
-plot(density(rstud)) 
-boxplot(rstudent(mod3)) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
-mod4 <- lm(tfr ~ (log(GDPperCapita) + logit(illiteracyFemale) + contraception)*region, data=UN) 
-Anova(mod4) 
-mod5 <- lm(tfr ~ log(GDPperCapita) + logit(illiteracyFemale) + contraception*region, data=UN) 
-Anova(mod5) 
-library(effects) 
-plot(allEffects(mod5, default.levels=100), ask=FALSE) 
-
-
-### Problem 3
-
-_Using the Canadian occupational prestige data (the Prestige data frame in the car package – see ?Prestige), replicate the linear regression of prestige on education, income, and women (i.e., percent women in the occupation)._
-
-_Use “regression diagnostics” to check for problems in this regression and attempt to correct any problems that you discover._
-
-```{r}
-
-library(car)
-data("Prestige")
-
-head(Prestige)
+data("chiczip")
+summary(lm(involact ~ race + fire + theft + age, subset=(chiczip == "s"), chicago))
+summary(lm(involact ~ race + fire + theft + age, subset=(chiczip == "n"), chicago))
 
 ```
 
-solution by Fox
-
-library(car) 
-modp1 <- lm(prestige ~ income + education + women, data=Prestige) 
-summary(modp1) 
-qq.plot(modp1, simulate=TRUE, line="none") 
-rstud <- rstudent(modp1) 
-plot(density(rstud)) 
-boxplot(rstud) 
-influencePlot(modp1) 
-av.plots(modp1, ask=FALSE)
-cr.plots(modp1, ask=FALSE) 
-modp2 <- lm(prestige ~ log10(income) + education + poly(women, 2), data=Prestige) 
-summary(modp2) 
-Anova(modp2) 
-influencePlot(modp2) 
-cr.plots(modp2, ask=FALSE) 
-
+지역을 나누자 변수의 유의성이 떨어지는 모습이 나타난다. `race`는 북쪽지역에서만 유의하다. Aggregated data의 문제, subsetting의 문제가 모두 있다. 완벽히 만족스러운 모델은 없지만 종합적인 고려를 통해 그 중 최선을 찾아야 할 것.
