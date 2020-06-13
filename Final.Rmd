@@ -1,19 +1,38 @@
 ---
-title: "Final_Assignment"
-author: "Harry Woo"
-date: '2020 5 26 '
+title: "데이터분석방법론 기말과제 #1"
+author: "우형진 (202085-010073)"
+date: '2020-06-14'
 output: html_document
 ---
+
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { /* Header 4 - and the author and data headers use this too  */
+    font-size: 18px;
+  text-align: center;
+}
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  text-align: center;
+}
+</style>
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Problem 1
+# Problem 1
 
 _Chapter 12 Chicago Insurance Redlining- a complete example in Faraway-PRA 의 주요 기본 분석 처리를 Rstudio의 rmarkdown 을 이용하여 html(또는 pdf) 요약보고서로 간단히 정리하여 제출하기_
 
-```{r include=FALSE}
+## Package Loading
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, results= 'hide'}
 
 rm(list=ls())
 
@@ -21,16 +40,18 @@ library(faraway)
 library(ggplot2)
 library(gridExtra)
 library(GGally)
-# install.packages("reshape2")
 library(reshape2)
 library(ggfortify)
 library(knitr)
 library(dplyr)
-# install.packages("kableExtra")
 library(kableExtra)
 library(leaps)
 
 ```
+
+\newline
+
+## `eco` Data Loading and Analysis
 
 ```{r}
 
@@ -42,9 +63,11 @@ plot1 <- ggplot(data = eco, aes(x= usborn, y = income)) +
   geom_point() + xlab("Proportion US born") + ylab("Mean Annual Income") + 
   theme_bw()
 
+# 회귀모형 적합
 eco_lm <- lm(income ~ usborn, data = eco)
 summary(eco_lm)
 
+# x축 확대 및 회귀식 표현
 plot2 <- plot1 +
   geom_abline(slope = eco_lm$coef[2], intercept = eco_lm$coef[1], col = "blue") +
   coord_cartesian(xlim = c(0, 1), ylim = c(15000, 70000)) 
@@ -53,16 +76,21 @@ grid.arrange(plot1, plot2, ncol = 2)
 
 ```
 
-usborn이 통계적으로 유의하고, negative 관계 확인 가능
+\newline
 
-적합된 회귀식이 $income = -46019 * usborn + 68642$ 이므로, `usborn`인 경우 `income`이 더 낮아
-US Bureau of the Census 의 자료와 다른 결과
-the results for the aggregated data may not hold true at the individual level.
+`eco` 데이터셋에 대한 기본적인 회귀분석 결과, 설명변수 `usborn`이 통계적으로 유의하고, 산점도 및 x 축을 확장한 산점도에 회귀식을 추가표현한 산점를 통해 확인할 수 있듯이, `usborn`과 종속변수 `income`이 음의 상관관계가 존재함을 확인할 수 있다.
+
+\newline
+
+상기 모형에서 적합된 회귀식이 $income = -46019 * usborn + 68642$ 이므로, `usborn`이 1인 경우, 즉 미국에서 태어난 경우 `income`이 46019 가량 더 낮다는 결론에 다다르나, 실제 US Bureau of the Census 의 자료에서는 미국 태생인 경우 소득이 조금 더 높다. Faraway는 이처럼 집계된 데이터로 파악한 결과가 개별 수준으로 내려갔을 때는 사실이 아닐 수 있음을 지적한다.
+
+\newline
+
+## `chicago` Data Loading
 
 ```{r}
 
 data(chicago)
-summary(chicago)
 str(chicago)
 
 # volact 제거 및 income scale 조정
@@ -73,10 +101,13 @@ summary(chicago2)
 
 ```
 
-a wide range in the `race`, racial composition in percent minority, reduce the variation in the regression coefficient for race, allowing us to assess this effect more accurately.
-skewness in the `theft` and `income` variables
-`involact` has a large number of zeroes 
-`involact` : new FAIR plan policies and renewals per 100 housing units. measure of insurance availability in the voluntary market.
+\newline
+
+`chicago` 데이터셋을 통해 종속변수 `involact`에 대한 `race` 및 다른 설명변수의 영향을 살펴보도록 한다. 기술통계량 상에서 소수 인종의 비율인 `race`의 범위가 넓어 분석이 효과적일 것을 기대된다.
+
+\newline
+
+## Graphical EDA (1)
 
 ```{r}
 
@@ -90,8 +121,20 @@ ggplot(data = melt(chicago2), aes(x = variable, y = value)) +
   geom_boxplot(aes(fill = variable)) + facet_wrap(~variable, scale="free") +
   theme(legend.position = "none")
 
+```
+
+\newline
+
+자료의 분포형태에 대한 EDA 결과, 종속변수인 `involact`에는 0값이 많아 분석에 주의가 필요할 것으로 판단되며, `theft`와 `fire`를 비롯한 설명변수들의 분포가 고르지 않은 편이다.
+
+\newline
+
+## Graphical EDA (2)
+
+```{r}
+
 # pairs
-ggpairs(chicago2, 
+ggpairs(cbind(chicago2[,1:4], income = chicago2[,6], involact = chicago2[,5]), 
         lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
         diag = list(discrete="barDiag", 
                     continuous = wrap("densityDiag", alpha = 0.5 )),
@@ -100,103 +143,170 @@ ggpairs(chicago2,
                                               alignPercent = 0.8))) +
   theme(legend.position = "bottom")
 
-```
-
-
-```{r}
-
 summary(lm(involact ~ race, data = chicago2))
 
 ```
-high % minority are being denied insurance at higher rate than other zip codes.
-다른 변수는 어떤가?
+
+\newline
+
+상관관계/산점도행렬을 확인할 수 있는 것처럼 `fire`, `theft`, `age`와 `involact` 간에는 양의 상관관계, `income`과 `involact` 간의 음의 상관관계는 일반적으로 예측할 수 있는 방향인 것으로 판단된다. 다만 `race`와 `involact` 사이에 양의 상관관계가 관측되고 있는데, 단순한 회귀모형윽 적합한 결과에서도 `race`는 통계적으로 매우 유의한 것으로 나타난다. 
+
+\newline
+
+`race` 자체가 `involact`에 영향을 미치는 것인지, 설명변수 간의 영향이 있는 것인지 추가적인 모형의 진단 및 개선이 필요한 것으로 판단된다.
+
+\newline
+
+## Model fitting
 
 ```{r}
 
 ch_lm <- lm(involact ~ race + fire + theft + age + log(income), data = chicago2)
 summary(ch_lm)
 
-autoplot(ch_lm, which = c(1, 2, 4, 6))
+```
 
+\newline
+
+종속변수와 모든 설명변수 간의 회귀모형을 적합하되, `income`의 경우 분포의 형태와 소득이라는 변수의 특수성을 고려하여 log transformation을 실시하였다.
+
+\newline
+
+모형 summary에서 확인할 수 있듯이 `income`을 제외한 모든 설명변수가 통계적으로 유의하며, 결정계수 또한 75% 수준으로 양호하다.
+
+\newline
+
+## Model diagnosis (1)
+
+```{r}
+
+autoplot(ch_lm, which = c(1:6))
+
+```
+
+\newline
+
+적합한 모형 `ch_lm`을 기준으로 모형진단을 실시하였다.
+
+\newline
+
+먼저 잔차와 추정값 사이의 관계에서는 종속변수의 많은 0 값으로 인해 일부 streak이 관측되나 이를 제외하면 문제가 보이지 않으며, qqplot에서도 정규성에 큰 문제는 없는 것으로 보인다. 
+
+\newline
+
+Influential data 확인을 위한 plot에서도 Cook's distance 에서는 0.5를 넘는 수치는 나타나지 않으나, 모든 진단 plot에서 `60610`, `60607`, `60621` 세 데이터가 상대적으로 눈에 띄는 수치를 보이고 있음을 확인할 수 있다.
+
+\newline
+
+## Model diagnosis (2)
+
+```{r}
+
+# Diagnostic plots of Faraway
 par(mfrow = c(1,2))
 qqnorml(rstudent(ch_lm), main = "Jacknife Residuals")
 halfnorm(cooks.distance(ch_lm), main = "Cook-Statistics")
 par(mfrow = c(1,1))
-
 qt(0.05/(2*47),47-6-1)
 
+```
+
+\newline
+
+Faraway에 따라 추가로 Jacknife Resifual 및 halfnorm plot을 통해 검토한 결과, 6번째 및 24번째 데이터 `60610`, `60607`이 상대적으로 눈에 띄는 것을 재확인할 수 있다.
+
+\newline
+
+## Outliers? Influentials?
+
+```{r}
+
+# 해당 데이터 확인
+kable(subset(chicago2, row.names(chicago2) %in% c(60610, 60607))) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+
+\newline
+
+해당 데이터(`60610`, `60607`)를 확인한 결과, `fire`, `theft`가 높은 데이터로 기존의 회귀모형에 큰 영향을 주었을 수 있을 것이라 추정되는 바, 모형의 개선을 위하여 해당 Influention data 를 제외한 새로운 모형을 설계해 볼 필요가 있는 것으로 판단된다.
+
+\newline
+
+## Excluding influential data
+
+```{r}
+
+# 해당 데이터 제거
+chicago3 <- subset(chicago2, !(row.names(chicago2) %in% c(60610, 60607)))
+
+# 새로운 모형
+ch_lm2 <- lm(involact ~ race + fire + theft + age + log(income), 
+            data = chicago3)
+summary(ch_lm2)
+
+```
+
+\newline
+
+해당 관측치 두 건을 제외한 데이터셋 `chicago3`에 대해 새로운 모형을 적합하여 확인한 결과, 이전과 달리 `theft`와 `age`가 더 이상 유의수준 0.05에서 유의하지 않은 것으로 나타났다. 결정계수는 80% 수준으로 소폭 상승하였다.
+
+\newline
+
+
+## Transformation
+
+```{r}
+
+# PR plots
 par(mfrow = c(2, 3))
 prplot(ch_lm, 1)
 prplot(ch_lm, 2)
 prplot(ch_lm, 3)
 prplot(ch_lm, 4)
 prplot(ch_lm, 5)
-
-```
-
-튀는 데이터로 60610, 60607, 나아가 60621이 확인된다.
-
-
-```{r}
-
-# 해당 데이터 확인
-
-kable(subset(chicago2, row.names(chicago2) %in% c(60610, 60607))) %>% 
-  kable_styling(bootstrap_options = c("striped", "hover"))
-
-```
-
-60610, 60607 은 `fire`, `theft`가 높은 데이터
-
-
-```{r}
-
-# 해당 데이터 제거
-
-chicago3 <- subset(chicago2, !(row.names(chicago2) %in% c(60610, 60607)))
-
-ch_lm2 <- lm(involact ~ race + fire + theft + age + log(income), 
-            data = chicago3)
-summary(ch_lm2)
-
-
-```
-
-theft and age are no longer significant at the 5% level.
-
-#### transformation
-
-because the response has some zero values and for interpretational reasons we will not try to
-transform it. Similarly, since the race variable is the primary predictor of interest we won’t try transforming it either so as to avoid interpretation difficulties
-
-polynomial model with quadratic terms
-
-```{r}
+par(mfrow = c(1, 1))
 
 ch_lm3 <- lm(involact ~ race + poly(fire,2) + poly(theft,2) + poly(age,2) + poly(log(income),2),
              data = chicago3)
+summary(ch_lm3)
 anova(ch_lm2, ch_lm3)
 
 ```
-we can do without the quadratic terms. A check of the partial residual plots also reveals no
-need to transform
 
-#### Variable Selection
+\newline
+
+Partial residual plot을 통해 확인한 결과 특별히 변수 변환의 필요성은 확인되지 않는다. 다만 실제 변환 필요성 여부를 검증하기 위하여 2차식까지의 변환을 검토하되, 종속변수와 `race`는 변수 변환 시 모형 해석상의 문제가 있음을 고려하여 이들 두 변수는 제외한 모형 `ch_lm3`을 적합하였다.
+
+\newline
+
+결정계수는 소폭 상승하였으나 `fire(1차)`를 제외한 모든 설명변수가 유의하지 않으며, anova 결과에서도 변환이 오히려 모형을 악화시켰음을 확인할 수 있다. 이에 2차식을 고려하지 않은 모형을 유지하며, 변수선택을 진행하기로 한다.
+
+\newline
+
+## Variable Selection
 
 we are mostly interested in the dependency of involact on the race variable.
 The problem is that collinearity with the other variables
 
 ```{r}
 
+step(ch_lm2, direction = "both")
+
 y <- chicago3$involact
 x <- cbind(chicago3[,1:4],linc = log(chicago3[,6]))
 a <- leaps(x, y)
 Cpplot(a)
 
-
 ```
 
-Cp 값 기준으로 변수선택 시, 1234 가 최적으로 판단됨.
+\newline
+
+`step` 문을 이용하여 AIC 기준으로 변수 선택을 진행한 결과 **`income`을 제외한 모형이 최적**으로 판별되었으며, Cp 값 기준으로 변수선택을 진행한 결과에서도, `income`을 제외한 **1234** 가 가장 낮은 Cp 값을 가지며 line에 근사하기에 최적의 조합인 것으로 판단된다.
+
+\newline
+
+## Final Model
 
 ```{r}
 
@@ -204,28 +314,54 @@ ch_lm4 <- lm(involact ~ race + fire + theft + age, data = chicago3)
 summary(ch_lm4)
 
 ```
-we have verified that there is a positive relationship between involact and race while controlling for a selection of the other variables.
 
-#### Alternative Models
+\newline
+
+변수선택 결과를 반영한 최종 모형을 확인한 결과, `race`와 `fire`가 유의수준 0.05에서 통계적으로 매우 유의하고 `theft`와 `age`는 유의하지 않은 것으로 나타났다. 결정계수는 80% 수준으로 양호하다.
+
+\newline
+
+분석 결과 `race`와 `involact` 사이에는 통계적을 유의한 양의 상관관계가 있는 것으로 판단된다.
+
+\newline
+
+## Alternative Models
+
 ```{r}
 
 summary(lm(involact ~ race + fire + log(income), data = chicago3))
 summary(lm(involact ~ race + fire, data = chicago3))
+summary(lm(involact ~ race * log(income) + fire, data = chicago3))
 
 ```
 
+\newline
 
-#### Diagnostics for Final Model
+유의하지 않은 두 변수를 제외하고 `log(income)`을 추가해본 결과, 오히려 `race`가 유의하지 않게 되었으며, 결정계수 또한 감소하였다. `log(income)`도 제외하고 `race`와 `fire`만 남겨본 결과에서는 다시 `race`가 유의하게 변한다. 이에 `race`와 `income` 간의 교호작용에 대한 검토를 실시해 보았으나 이 경우에서도 `fire`만이 유의한 것으로 나타났다.
+
+\newline
+
+결과적으로 이 분석을 통해 소수인종의 비율이 높을 수록 다른 변수와 무관하게 보험을 redlining 당하는 사회적 문제가 존재한다는 결론을 내릴 수 있다.
+
+\newline
+
+## Diagnostics for Final Model
+
 ```{r}
 
-autoplot(ch_lm4, which = c(1, 2, 4, 6))
+vif(ch_lm4)
+
+autoplot(ch_lm4, which = c(1:6))
 
 ```
-모형진단 결과 큰 문제는 없는 것으로 보인다.
 
+\newline
 
-So it looks like there is some good evidence that zip codes with high minority populations are being “redlined” - that is improperly denied insurance. While there is evidence that some of the relationship between race and involact can be explained by the fire rate, there is still a component that cannot be attributed to the other variables.
+최종 모형에서 변수간의 다중공선성에 문제는 보이지 않으며, 모형 진단 Plot에서도 큰 이슈는 없는 것으로 판단된다.
 
+\newline
+
+## Further analysis for insight
 
 ```{r}
 
@@ -235,4 +371,12 @@ summary(lm(involact ~ race + fire + theft + age, subset=(chiczip == "n"), chicag
 
 ```
 
-지역을 나누자 변수의 유의성이 떨어지는 모습이 나타난다. `race`는 북쪽지역에서만 유의하다. Aggregated data의 문제, subsetting의 문제가 모두 있다. 완벽히 만족스러운 모델은 없지만 종합적인 고려를 통해 그 중 최선을 찾아야 할 것.
+\newline
+
+Faraway가 제공한 추가 자료 `chiczip`을 통해 남부/북부의 지역변수를 추가하여 모형을 적합한 결과, 지역을 구분하지 않았을 때와는 자못 다른 결과가 나타났다. 설명변수들의 유의성이 떨어졌으며, `race`의 영향력을 강조한 기존 결론과 달리 `race`는 북쪽지역에서만 유의한 모습을 보인다. 
+
+\newline
+
+이처럼 기존에 생각하지 못하는 변수가 추가되거나 개별 데이터들이 모였을 때 분석결과가 변하는 것으로부터 언제나 완벽히 만족스러운 모델은 없다는 생각을 하게 된다. 주어진 상황에서 종합적인 고려를 통해 최선의 모형을 찾아내고 끊임없이 개선하려는 노력이 필요한 것으로 판단된다.
+
+\newline
