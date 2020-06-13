@@ -2,11 +2,24 @@
 title: "Final2"
 author: "Harry Woo"
 date: '2020 6 12 '
-output: html_document
+output:
+  html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+library(car)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(ggfortify)
+library(reshape2)
+
 ```
 
 ### Problem 2
@@ -31,6 +44,9 @@ str(un)
 summary(un)
 
 ```
+
+데이터를 `un`으로 로딩한 후 기술통계량을 확인한 결과, 상당수의 결측치가 존재하는 것으로 확인되는 바, 우선 결측치 처리를 진행해야 하는 것으로 판단된다.
+
 ```{r}
 
 # NA 처리, 변수 선택
@@ -38,19 +54,26 @@ un2 <- na.omit(un[,c("tfr", "GDPperCapita", "illiteracyFemale", "contraception",
 
 ```
 
+`na.omit`으로 결측치를 제거하고, 문제에서 제시한 변수인 `tfr`, `GDPperCapita`, `illiteracyFemale`, `contraception`, `region` 을 선택하여 `un2`로 저장하였다.
+
 
 #### 2.1 Exploring the data graphically
 
 ```{r}
 
-head(un2)
-
-ggpairs(un2, 
+ggpairs(un2,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
         diag = list(discrete="barDiag", continuous = wrap("densityDiag", alpha = 0.5 )),
         upper = list(combo = wrap("box_no_facet", alpha = 0.5),
                      continuous = wrap("cor", size = 4,alignPercent = 0.8))) +
   theme(legend.position = "bottom")
+
+```
+
+산점도/상관계수 행렬을 통해 살펴본 결과, `GPDperCapita`와 `illiteracyFemale` 두 변수는 치우침을 고려하여 log transformation을 시도할 필요가 있는 것으로 보인다. 종속변수 `tfr`은 `GDPperCapita` 및 `Contraception`과 음의 상관관계를, `illiteracyFemale`과는 양의 상관관계를 가지며, 적합된 회귀선의 양상으로는 다른 변수들 간에도 상관관계가 존재하는 것으로 보인다.
+
+
+```{r}
 
 # by region
 ggpairs(un2[,1:4], aes(colour = un2$region),
@@ -62,6 +85,7 @@ ggpairs(un2[,1:4], aes(colour = un2$region),
 
 ```
 
+`region` 변수의 영향을 확인하기 위해 새로운 산점도/상관계수 행렬을 작성하였다. 특히 치우친 형태의 분포를 보이던 변수들의 분포를 지역을 기준으로 다시 그리자 지역별로 양상이 크게 다르게 나타나며, 특히 유럽이 다른 지역과 차이를 보이는 것을 확인할 수 있다. 향후 모델에 `region` 변수를 추가하는 것이 합리적인 것으로 판단된다.
 
 #### 2.2 Linear least-squares regression
 
@@ -72,22 +96,22 @@ summary(un_lm)
 
 ```
 
-##### Diagnostic
+문제에서 주어진 바와 같이 `region`을 제외한 설명변수를 기준으로 회귀모형 `un_lm`을 적합하였다. `illiteracyFemale`과 `contraception`이 매우 유의하게 나타났고, 의아하게도 `GDPperCapita`는 유의수준 0.05에서 유의하지 않은 것으로 나타났다. 결정계수는 72% 수준으로 양호하다.
+
+##### Diagnosis
 
 ```{r}
 
-library(car) 
-qq.plot(mod1) 
-rstud <- rstudent(mod1) 
-plot(density(rstud)) 
-boxplot(rstud) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
-influencePlot(mod1) 
-av.plots(mod1, ask=FALSE) 
-cr.plots(mod1, ask=FALSE) 
+autoplot(un_lm, which = c(1:6))
+
+avPlots(un_lm, ask=FALSE)
+crPlots(un_lm, ask=FALSE) 
 
 ```
 
+Regression diagnostic plot을 통해 확인한 결과, 오차의 선형성, 정규성, 등분산성에는 큰 문제가 없는 것으로 판단된다. Outlier 및 influential point와 관련하여서도 Tonga, Bangladesh 등의 데이터가 반복적으로 튀고 있으나 cook's distance 수치가 양호하며 added variable plot 상에서도 큰 이슈는 없는 것으로 보인다.
+
+그러나 Component+residual plot을 통해 확인한 결과 `GDPperCapita`와 `illiteracyFemale`에 nonlinearity 이슈가 있는 것으로 판단되는 바, 최초 graphical 분석에서 확인한 바와 같이 두 변수에 log transformation을 시도하였다.
 
 ##### Log transformation
 
@@ -96,17 +120,37 @@ cr.plots(mod1, ask=FALSE)
 un_lm2 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception, data = un2) 
 summary(un_lm2) 
 
-cr.plots(mod2, ask=FALSE) 
-qq.plot(mod2) 
-rstud <- rstudent(mod2) 
-plot(density(rstud)) 
-boxplot(rstud) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
-influencePlot(mod2) 
-av.plots(mod2, ask=FALSE) 
+anova(un_lm, un_lm2) 
 
 ```
 
+로그변환 후 회귀모형을 `un_lm2`로 적합하여 summary를 확인한 결과, 세 설명변수가 모두 유의하며, 특히 인당 GDP 변수가 통계적으로 유의한 것으로 확인되었다. 결정계수 또한 소폭 향상되었다. 
+
+##### Diagnosis (2)
+
+```{r}
+
+autoplot(un_lm2, which = c(1:6))
+
+avPlots(un_lm2, ask=FALSE)
+crPlots(un_lm2, ask=FALSE) 
+
+un2[row.names(un2) == "Tonga",]
+
+# multiple boxplot using reshape2 package
+ggplot(data = melt(un2[,1:4]), aes(x = variable, y = value)) + 
+  geom_boxplot(aes(fill = variable)) + facet_wrap(~variable, scale="free") +
+  theme(legend.position = "none")
+
+influencePlot(un_lm2)
+
+# exluding Tonga?
+summary(lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception, data = un2,
+             subset = row.names(un2) != "Tonga"))
+
+```
+
+모형진단 결과, 오차의 선형성, 정규성과 등분산성에 문제가 없으며 Component+residual plot 또한 크게 개선된 것으로 보인다. 다만 cook's distance 수치가 전반적으로 다소 상승하였으며, 지속적으로 Tonga 데이터가 튀고 있는 것으로 보인다. 이에 Tonga 를 제외한 모형을 적합해 본 결과, 다소 수치가 개선되었으나 본래 모형과 큰 차이는 없는 것으로 보여 기존 모형 `un_lm2`를 유지하였다.
 
 #### 2.3 Introducing the factor `region`
 
@@ -117,36 +161,84 @@ av.plots(mod2, ask=FALSE)
 un_lm3 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception + region, data = un2) 
 summary(un_lm3) 
 
-Anova(mod3) 
-cr.plots(mod3, ask=FALSE) 
-influencePlot(mod3) 
-qq.plot(mod3) 
-rstud <- rstudent(mod3) 
-plot(density(rstud)) 
-boxplot(rstudent(mod3)) 
-identify(rep(1, length(rstud)), rstud, names(rstud)) 
+anova(un_lm2, un_lm3) 
 
 ```
+
+문제에서 요구한 바와 같이 `region`을 추가한 회귀모형을 적합하여 `un_lm3`로 저장하였다. summary 확인 결과, 산점도/상관계수 행렬에서 확인한 바와 같이 지역이라는 factor 변수가 Oceania를 제외하면 통계적으로 유의한 것으로 나타났다. 결정계수는 79% 수즌으로 향상되었으며, anova 결과 또한 유의하게 나타났다.
+
+##### Diagnosis
+
+```{r}
+
+autoplot(un_lm3, which = c(1:6))
+
+avPlots(un_lm3, ask=FALSE)
+crPlots(un_lm3, ask=FALSE) 
+
+influencePlot(un_lm3)
+
+```
+
+모형 진단결과, 기존에는 넘어갔던 Tonga의 영향력이 `region`을 추가한 모형에서는 특히 Oceania 지역에 지나친 영향력을 보이는 사실상의 outlier로 모형의 설명력을 저해하고 있는 것으로 판단되었다. 
+
+```{r}
+
+# Tonga out
+un3 <- un2[row.names(un2) != "Tonga",]
+
+un_lm4 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception + region, data = un3) 
+summary(un_lm4)
+
+```
+
+이에 Tonga를 제외한 새로운 데이터셋 un3를 바탕으로 모형을 재수립하였다. 비록 기존에 유의하였던 regionAmerica 의 p-value가 증가하였으나 regionOceania는 개선되었고, 결정계수 또한 소폭 개선되었다.
+
+
 
 ##### 2.3.2 Considering the possibility that region interacts with the other
 
 ```{r}
 
-un_lm4 <- lm(tfr ~ (log(GDPperCapita) + log(illiteracyFemale) + contraception)*region, data = un2) 
-summary(un_lm4)
-
-Anova(mod4) 
-
-un_lm5 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception*region, data = un2) 
+un_lm5 <- lm(tfr ~ log(GDPperCapita) * region + log(illiteracyFemale) * region + 
+               contraception * region, data = un3) 
 summary(un_lm5)
-
-Anova(mod5) 
-
-library(effects) 
-plot(allEffects(un_lm5, default.levels=100), ask=FALSE)
-
+anova(un_lm4, un_lm5) 
 
 ```
+
+변수 간의 interaction 을 확인하기 위하여 먼저 교호작용을 고려한 회귀모형 `un_lm5`를 적합하여 확인한 결과, GDP, 문맹률이 더 이상 유의하지 않게 되었으며 사실상 피임율만이 합계출산율에 영향을 주는 부적절한 모형이 만들어졌다.
+
+
+```{r}
+
+un_lm6 <- lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception * region, data = un3) 
+summary(un_lm6)
+anova(un_lm4, un_lm6) 
+
+# interaction?
+un3 %>% mutate(Europe = ifelse(region == "Europe", "Europe", "Non-europe")) %>% 
+  ggplot(aes(x = log(GDPperCapita), y = tfr, colour = Europe)) +
+  geom_point() + stat_smooth(method = lm, fullrange = TRUE, se = TRUE) +
+  theme(legend.position = "bottom")
+
+vif(un_lm6)
+
+```
+
+위 모형을 참고하여 피임율에만 `region`과의 교호작용을 고려하여 모델을 재설계한 결과, `region`은 Europe인 경우에 한하여 통계적으로 매우 유의하였고, `contraception`와 `regionEurope`의 교호작용 또한 매우 유의한 것으로 나타났으며, anova 결과 또한 유의하였다.
+
+Europe 지역인 경우와 그렇지 않은 경우의 `contraception` 대 `tfr`의 관계를 산점도로 관찰한 결과, 회귀선이 완전히 평행하지는 않으나 일정 정도 interaction이 존재함을 유추할 수 있다. 공선성에는 문제가 존재하지 않았다.
+
+
+```{r}
+
+# what if brought Tonga?
+summary(lm(tfr ~ log(GDPperCapita) + log(illiteracyFemale) + contraception * region, data = un2))
+
+```
+
+마지막으로 기존에 제외한 `Tonga`의 영향을 확인하기 위해 `Tonga`를 추가한 모형을 적합했을 때, `regionOceania`가 매우 유의하고 `contraception`과도 교호작용함을 확인하는 것으로 나타나고 있으나, 이는 unusual data인 `Tonga`로 인해 과대평가 된 것이라 판단된다. 그러므로 **기존의 모형인 `un_lm6`이 최적의 모형이며, 지역과 피임률 간에는 일부 상호작용이 존재하는 것으로 판단된다.**
 
 
 ### Problem 3
@@ -154,17 +246,6 @@ plot(allEffects(un_lm5, default.levels=100), ask=FALSE)
 _Using the Canadian occupational prestige data (the Prestige data frame in the car package – see ?Prestige), replicate the linear regression of prestige on education, income, and women (i.e., percent women in the occupation)._
 
 _Use “regression diagnostics” to check for problems in this regression and attempt to correct any problems that you discover._
-
-```{r include=FALSE}
-
-library(car)
-library(ggplot2)
-library(GGally)
-library(dplyr)
-library(ggfortify)
-
-```
-
 
 #### Data Loading and EDA
 
@@ -185,9 +266,9 @@ ggpairs(pt, lower = list(continuous = wrap("smooth", alpha = 0.3, size = 0.1)),
 ```
 
 
-`prestige`와 `education`, `income` 사이에 강한 선형 관계가 관측된다.
-데이터의 분포 형태 및 multicaptive? 특성을 감안하여 `income`은 log transformation이 필요할 것으로 추측되며,
-`women`은 `income`과 음의 상관관계가 있는 것으로 보인다.
+`car` 패키지의 데이터 `Prestige`를 로드한 후, 문제에서 주어진 대로 `prestige`, `education`, `income`,  `women` 네 변수를 선택해 `pt`로 저장하였다. 
+
+산점도/상관계수 행렬을 통해 살펴본 결과, `prestige`와 `education`, `income` 사이에 강한 선형 관계가 관측되며, `women`은 `income`과 음의 상관관계가 있는 것으로 보인다. 데이터의 분포 형태 및 소득 변수 자체의 특성을 감안할 때, `income`은 log transformation이 필요할 것으로 추측되며, `women` 또한 log transformation을 시도할 필요가 있을 것으로 보인다.
 
 
 #### Model Fitting
@@ -201,30 +282,25 @@ summary(pt_lm)
 
 ```
 
-문제에서 주어진 대로, `prestige`를 종속변수로, `income`, `education`, `women`을 설명변수로 회귀모형을 적합하였다. summary 확인 결과, `income`과 `education`은 유의수준 0.05에서 통계적으로 유의하며, F 통계량의 p-value는 매우 유의, 결정계수는 79.8% 수준으로 양호한 것으로 나타났다.
+문제에서 주어진 대로, `prestige`를 종속변수로, `income`, `education`, `women`을 설명변수로 회귀모형 `pt_lm`을 적합하였다. summary 확인 결과, `income`과 `education`은 유의수준 0.05에서 통계적으로 유의하며, F 통계량의 p-value는 매우 유의, 결정계수는 79.8% 수준으로 양호한 것으로 나타났다.
 
 
-#### Diagnostic
+#### Regressioni Diagnostic
 
 ```{r}
 
 autoplot(pt_lm, which = c(1:6))
 
-qqPlot(pt_lm, simulate=TRUE, line="none") 
-
-rstud <- rstudent(pt_lm) 
-plot(density(rstud)) 
-boxplot(rstud) 
-
-influencePlot(pt_lm) 
 avPlots(pt_lm, ask=FALSE)
 crPlots(pt_lm, ask=FALSE) 
 
 ```
 
-모형의 진단을 위하여,
+회귀모형에 대한 diagnostic plot을 통해 검토한 결과, qqplot 상에서 정규성 문제는 없는 것으로 보이며, 스튜던트화잔차 plot에서 오차의 등분산성 문제도 없는 것으로 보인다. 
 
+선형성과 관련하여서는 추가적인 검토가 필요한 것으로 보여 Component Residual Plot을 통해 변수별 비선형성 이슈를 검토하였으며, 그 결과 `education`은 큰 이슈가 없으나, `income`은 monotone nonlinearity, `women`은 non-monotone (slight) nonlinearity 이슈가 존재하는 것으로 보인다. 이를 개선하기 위해 두 변수에 대한 변환이 필요한 것으로 판단된다.
 
+Outlier 및 influential 관측치의 경우 general manager가 다소 눈에 띄고 있으나 모델에 영향을 주는 수치는 아닌 것으로 판단된다.
 
 
 #### Correction
@@ -234,15 +310,36 @@ crPlots(pt_lm, ask=FALSE)
 pt_lm2 <- lm(prestige ~ log(income) + education + women, data = pt) 
 summary(pt_lm2) 
 
-pt_lm3 <- lm(prestige ~ log(income) + education + poly(women, 2), data = pt) 
+pt_lm3 <- lm(prestige ~ log(income) + education + poly(women, 2, raw = TRUE), data = pt) 
 summary(pt_lm3) 
 
 anova(pt_lm, pt_lm2, pt_lm3) 
 
-influencePlot(pt_lm3) 
-crPlots(pt_lm3, ask=FALSE) 
+step(pt_lm3, direction = "both")
 
 ```
 
-
 진단결과를 반영하여 모형을 다음과 같이 개선하였다. 
+
+1. 먼저 `income` 변수를 log transformaion 하여 새로운 모형 `pt_lm2`를 적합하였다.
+2. 추가로 비선형성 이슈를 감안, `women` 변수에 polynomial regression을 시도한 모형 `pt_lm3`을 적합하였다.
+
+`pt_lm` 대비 두 모형 모두 결정계수가 개선되었고, `pt_lm3`에서는 특히 `women`의 2차항이 유의한 것으로 나타나면서 `women` 변수가 처음으로 설명력을 갖게 되었다. 
+
+anova 결과에서도 `pt_lm3`가 유의함을 확인할 수 있으며, AIC 기준의 변수 선택 결과에서도 변화가 없었다. 시대적 상황을 고려할 때 `women`의 영향력을 제거하는 모형이 설득력을 갖기 어려운 바, **`pt_lm3`를 최종 모형으로 선택**하였다.
+
+
+```{r}
+
+autoplot(pt_lm3, which = c(1:6))
+
+avPlots(pt_lm3, ask=FALSE)
+crPlots(pt_lm3, ask=FALSE) 
+
+vif(pt_lm3)
+
+```
+
+Regression diagnostic plot 에서 선형성, 정규성, 등분산성에 문제가 없으며 cook's distance 수치도 개선되고, outlier, influential 관측치 이슈도 없는 것을 판단된다. Component+residual plot에서도 `income`의 비선형성이 개선되었고, `women`의 nonmonotone 비선형성 이슈도 상대적으로 개선된 것으로 판단된다.
+
+
